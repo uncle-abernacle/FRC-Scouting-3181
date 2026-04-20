@@ -74,17 +74,21 @@ export function wireSignOut() {
   });
 }
 
-export async function signOutAndRedirect() {
-    try {
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-    } catch (error) {
-      console.warn(error);
-    } finally {
-      localStorage.removeItem("scoutDraft3181");
-      window.location.href = "index.html";
+export async function clearSession() {
+  try {
+    if (supabase) {
+      await supabase.auth.signOut();
     }
+  } catch (error) {
+    console.warn(error);
+  } finally {
+    localStorage.removeItem("scoutDraft3181");
+  }
+}
+
+export async function signOutAndRedirect() {
+  await clearSession();
+  window.location.href = "index.html";
 }
 
 wireSignOut();
