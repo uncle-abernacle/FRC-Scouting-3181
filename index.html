@@ -40,7 +40,10 @@
           </label>
           <label>
             <span>Password</span>
-            <input id="password" type="password" autocomplete="current-password" required />
+            <span class="password-control">
+              <input id="password" type="password" autocomplete="current-password" required />
+              <button class="password-toggle" id="passwordToggle" type="button" aria-pressed="false">Show</button>
+            </span>
           </label>
           <button class="primary-button" id="authButton" type="submit">Enter app</button>
           <p class="form-status" id="authStatus" role="status"></p>
@@ -48,6 +51,6 @@
       </section>
     </main>
 
-    <script type="module" src="src/login.js?v=supabase-20260420"></script>
+    <script type="module" src="src/login.js?v=password-toggle-20260420"></script>
   </body>
 </html>

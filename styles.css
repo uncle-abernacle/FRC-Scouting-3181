@@ -336,6 +336,34 @@ textarea:focus {
   background: #180817;
 }
 
+.password-control {
+  position: relative;
+  display: block;
+}
+
+.password-control input {
+  padding-right: 88px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  min-height: 38px;
+  width: 72px;
+  border-radius: 6px;
+  background: rgba(255, 63, 164, 0.14);
+  color: var(--pink-soft);
+  font-size: 0.86rem;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.password-toggle[aria-pressed="true"] {
+  background: var(--pink);
+  color: #16000f;
+}
+
 .question-stack,
 .admin-list,
 .submission-list {

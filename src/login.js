@@ -10,6 +10,7 @@ const signInMode = document.querySelector("#signInMode");
 const signUpMode = document.querySelector("#signUpMode");
 const usernameInput = document.querySelector("#username");
 const passwordInput = document.querySelector("#password");
+const passwordToggle = document.querySelector("#passwordToggle");
 
 let mode = "signin";
 
@@ -22,6 +23,7 @@ authState().then(async (user) => {
 
 signInMode.addEventListener("click", () => setMode("signin"));
 signUpMode.addEventListener("click", () => setMode("signup"));
+passwordToggle.addEventListener("click", togglePasswordVisibility);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -60,6 +62,13 @@ function setMode(nextMode) {
   signUpMode.classList.toggle("active", isSignup);
   passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
   setMessage(status, "");
+}
+
+function togglePasswordVisibility() {
+  const shouldShow = passwordInput.type === "password";
+  passwordInput.type = shouldShow ? "text" : "password";
+  passwordToggle.textContent = shouldShow ? "Hide" : "Show";
+  passwordToggle.setAttribute("aria-pressed", String(shouldShow));
 }
 
 async function createAccount(username, email, password) {
