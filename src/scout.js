@@ -298,9 +298,7 @@ async function loadQuestions() {
     return;
   }
 
-  if (data?.length) {
-    state.questions = data.map(fromQuestionRow);
-  }
+  state.questions = data?.length ? data.map(fromQuestionRow) : [];
 
   renderQuestions();
   restoreDraft();

@@ -33,8 +33,24 @@
             <p class="eyebrow">Question builder</p>
             <h2 id="admin-title">Edit form</h2>
           </div>
-          <button class="ghost-button" id="loadTemplateButton" type="button">Load REBUILT template</button>
         </div>
+
+        <section class="template-panel" aria-labelledby="template-title">
+          <div class="item-topline">
+            <div>
+              <p class="eyebrow">Templates</p>
+              <h3 id="template-title">Saved forms</h3>
+            </div>
+          </div>
+          <div class="template-create">
+            <label>
+              <span>Template name</span>
+              <input id="templateName" placeholder="Week 1 quals" />
+            </label>
+            <button class="primary-button" id="createTemplateButton" type="button">Create template</button>
+          </div>
+          <div class="template-tabs" id="templateTabs" aria-label="Saved templates"></div>
+        </section>
 
         <form id="questionForm" class="question-editor">
           <input type="hidden" id="questionId" />
@@ -96,6 +112,6 @@
       </div>
     </template>
 
-    <script type="module" src="src/admin.js?v=rebuilt-template-20260420"></script>
+    <script type="module" src="src/admin.js?v=custom-templates-20260420"></script>
   </body>
 </html>

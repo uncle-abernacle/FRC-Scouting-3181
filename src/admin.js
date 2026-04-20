@@ -5,6 +5,7 @@ import { emptyState, escapeHtml, setMessage, setStatus } from "./ui.js";
 
 const state = {
   questions: defaultQuestions,
+  templates: [],
 };
 
 const els = {
@@ -18,7 +19,9 @@ const els = {
   questionOptions: document.querySelector("#questionOptions"),
   questionStatus: document.querySelector("#questionStatus"),
   resetQuestionButton: document.querySelector("#resetQuestionButton"),
-  loadTemplateButton: document.querySelector("#loadTemplateButton"),
+  templateName: document.querySelector("#templateName"),
+  createTemplateButton: document.querySelector("#createTemplateButton"),
+  templateTabs: document.querySelector("#templateTabs"),
   adminQuestionList: document.querySelector("#adminQuestionList"),
 };
 
@@ -51,6 +54,24 @@ function renderAdminQuestions() {
       </div>
     `;
     els.adminQuestionList.append(item);
+  });
+}
+
+function renderTemplates() {
+  els.templateTabs.innerHTML = "";
+
+  if (!state.templates.length) {
+    els.templateTabs.append(emptyState("No templates saved", "Create a template from the current questions."));
+    return;
+  }
+
+  state.templates.forEach((template) => {
+    const tab = document.createElement("button");
+    tab.className = "template-tab";
+    tab.type = "button";
+    tab.dataset.templateId = template.id;
+    tab.textContent = template.name;
+    els.templateTabs.append(tab);
   });
 }
 
@@ -88,7 +109,13 @@ function slugify(value) {
 
 function bindEvents() {
   els.resetQuestionButton.addEventListener("click", resetQuestionEditor);
-  els.loadTemplateButton.addEventListener("click", loadRebuiltTemplate);
+  els.createTemplateButton.addEventListener("click", createTemplate);
+  els.templateTabs.addEventListener("click", (event) => {
+    const templateId = event.target.dataset.templateId;
+    if (templateId) {
+      loadTemplate(templateId);
+    }
+  });
 
   els.questionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -136,21 +163,69 @@ function bindEvents() {
   });
 }
 
-async function loadRebuiltTemplate() {
-  if (!confirm("Load the full REBUILT template? This adds or updates template questions but keeps any custom questions with different IDs.")) {
+async function createTemplate() {
+  const name = els.templateName.value.trim();
+  if (!name) {
+    setMessage(els.questionStatus, "Name the template first.", true);
     return;
   }
 
-  setMessage(els.questionStatus, "Loading REBUILT template...");
-  const rows = defaultQuestions.map(toQuestionRow);
-  const { error } = await supabase.from("questions").upsert(rows);
+  const questions = sortedQuestions().map((question) => ({
+    id: question.id,
+    label: question.label,
+    type: question.type,
+    phase: question.phase,
+    order: Number(question.order || 0),
+    required: Boolean(question.required),
+    options: question.options || [],
+  }));
+
+  setMessage(els.questionStatus, "Creating template...");
+  const { error } = await supabase.from("question_templates").upsert(
+    {
+      name,
+      questions,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "name" },
+  );
 
   if (error) {
     setMessage(els.questionStatus, error.message, true);
     return;
   }
 
-  setMessage(els.questionStatus, "REBUILT template loaded. You can edit any question below.");
+  els.templateName.value = "";
+  setMessage(els.questionStatus, "Template saved.");
+  await loadTemplates();
+}
+
+async function loadTemplate(templateId) {
+  const template = state.templates.find((item) => item.id === templateId);
+  if (!template) return;
+
+  if (!confirm(`Load "${template.name}" into the live scouting form? This replaces the current live questions.`)) {
+    return;
+  }
+
+  setMessage(els.questionStatus, `Loading ${template.name}...`);
+
+  const { error: deleteError } = await supabase.from("questions").delete().not("id", "is", null);
+  if (deleteError) {
+    setMessage(els.questionStatus, deleteError.message, true);
+    return;
+  }
+
+  const rows = (template.questions || []).map(toQuestionRow);
+  if (rows.length) {
+    const { error: insertError } = await supabase.from("questions").insert(rows);
+    if (insertError) {
+      setMessage(els.questionStatus, insertError.message, true);
+      return;
+    }
+  }
+
+  setMessage(els.questionStatus, `${template.name} loaded into the live scouting form.`);
   await loadQuestions();
 }
 
@@ -165,12 +240,33 @@ async function loadQuestions() {
     return;
   }
 
-  if (data?.length) {
-    state.questions = data.map(fromQuestionRow);
-  }
+  state.questions = data?.length ? data.map(fromQuestionRow) : [];
 
   renderAdminQuestions();
   setStatus("Online", "online");
+}
+
+async function loadTemplates() {
+  const { data, error } = await supabase
+    .from("question_templates")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.warn(error);
+    renderTemplates();
+    return;
+  }
+
+  state.templates = data || [];
+  renderTemplates();
+}
+
+function subscribeToTemplates() {
+  supabase
+    .channel("question-templates-admin")
+    .on("postgres_changes", { event: "*", schema: "public", table: "question_templates" }, loadTemplates)
+    .subscribe();
 }
 
 function subscribeToQuestions() {
@@ -211,6 +307,9 @@ if (!isSupabaseConfigured) {
   bindEvents();
   resetQuestionEditor();
   renderAdminQuestions();
+  renderTemplates();
   await loadQuestions();
+  await loadTemplates();
   subscribeToQuestions();
+  subscribeToTemplates();
 }

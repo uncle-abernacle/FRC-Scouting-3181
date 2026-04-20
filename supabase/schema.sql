@@ -18,6 +18,14 @@ create table if not exists public.questions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.question_templates (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null,
+  questions jsonb not null default '[]',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.submissions (
   id uuid primary key default gen_random_uuid(),
   event_code text not null,
@@ -38,6 +46,7 @@ create table if not exists public.submissions (
 
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
+alter table public.question_templates enable row level security;
 alter table public.submissions enable row level security;
 
 alter table public.submissions add column if not exists starting_location text;
@@ -89,6 +98,19 @@ to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "Admins can read templates" on public.question_templates;
+create policy "Admins can read templates"
+on public.question_templates for select
+to authenticated
+using (public.is_admin());
+
+drop policy if exists "Admins can manage templates" on public.question_templates;
+create policy "Admins can manage templates"
+on public.question_templates for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
 drop policy if exists "Users can create own submissions" on public.submissions;
 create policy "Users can create own submissions"
 on public.submissions for insert
@@ -110,3 +132,4 @@ using (public.is_admin());
 create index if not exists profiles_username_idx on public.profiles (username);
 create index if not exists submissions_created_at_idx on public.submissions (created_at desc);
 create index if not exists questions_order_idx on public.questions (question_order);
+create index if not exists question_templates_name_idx on public.question_templates (name);
