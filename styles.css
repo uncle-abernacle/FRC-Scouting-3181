@@ -421,6 +421,13 @@ textarea:focus {
   gap: 12px;
 }
 
+.data-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(340px, 1.15fr);
+  gap: 14px;
+  align-items: start;
+}
+
 .question-card,
 .admin-item,
 .submission-item,
@@ -573,6 +580,83 @@ textarea:focus {
   padding: 14px;
 }
 
+.submission-item {
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.submission-item:hover,
+.submission-item:focus,
+.submission-item.active {
+  border-color: var(--pink);
+  background: linear-gradient(180deg, rgba(49, 17, 43, 0.98), rgba(21, 7, 19, 0.98));
+}
+
+.submission-item:focus {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(255, 63, 164, 0.16);
+}
+
+.detail-panel {
+  position: sticky;
+  top: 78px;
+}
+
+.submission-detail-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(38, 16, 34, 0.98), rgba(18, 6, 17, 0.98));
+  box-shadow: var(--shadow);
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-grid,
+.answer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.72fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid rgba(255, 180, 220, 0.14);
+  border-radius: 8px;
+  background: rgba(5, 0, 5, 0.32);
+}
+
+.detail-row span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.detail-row strong {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.detail-section {
+  display: grid;
+  gap: 8px;
+}
+
 .item-topline {
   display: flex;
   align-items: flex-start;
@@ -681,5 +765,21 @@ textarea:focus {
 
   .item-topline {
     display: grid;
+  }
+
+  .data-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-panel {
+    position: static;
+  }
+
+  .detail-header {
+    display: grid;
+  }
+
+  .detail-row {
+    grid-template-columns: 1fr;
   }
 }

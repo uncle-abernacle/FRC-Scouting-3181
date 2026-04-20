@@ -101,6 +101,12 @@ on public.submissions for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "Admins can delete submissions" on public.submissions;
+create policy "Admins can delete submissions"
+on public.submissions for delete
+to authenticated
+using (public.is_admin());
+
 create index if not exists profiles_username_idx on public.profiles (username);
 create index if not exists submissions_created_at_idx on public.submissions (created_at desc);
 create index if not exists questions_order_idx on public.questions (question_order);
