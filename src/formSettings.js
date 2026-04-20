@@ -7,10 +7,10 @@ export const defaultFormSettings = {
     review: { tab: "Review", eyebrow: "Submit", title: "Review notes" },
   },
   fields: {
-    eventCode: { label: "Event", placeholder: "2026miket", required: true },
-    matchNumber: { label: "Match", placeholder: "12", required: true },
-    teamNumber: { label: "Team", placeholder: "3181", required: true },
-    scoutName: { label: "Scout", placeholder: "Your name", required: true },
+    eventCode: { label: "Event", placeholder: "", required: true },
+    matchNumber: { label: "Match", placeholder: "", required: true },
+    teamNumber: { label: "Team", placeholder: "", required: true },
+    scoutName: { label: "Scout", placeholder: "", required: true },
     alliance: { label: "Alliance", required: true, options: ["Red", "Blue"] },
     station: { label: "Robot position", required: true, options: ["1", "2", "3"] },
     startingLocation: {
@@ -18,13 +18,13 @@ export const defaultFormSettings = {
       required: false,
       options: ["Left", "Center", "Right", "Source side", "Scoring side"],
     },
-    preloadFuel: { label: "Preload game pieces", placeholder: "0", required: false },
+    preloadFuel: { label: "Preload game pieces", placeholder: "", required: false },
     notes: { label: "Extra notes", placeholder: "Defense, driver skill, weird moments..." },
   },
 };
 
 export function mergeFormSettings(settings = {}) {
-  return {
+  const merged = {
     steps: {
       ...defaultFormSettings.steps,
       ...(settings.steps || {}),
@@ -39,4 +39,12 @@ export function mergeFormSettings(settings = {}) {
       ]),
     ),
   };
+
+  Object.entries(merged.fields).forEach(([key, field]) => {
+    if (key !== "notes") {
+      field.placeholder = "";
+    }
+  });
+
+  return merged;
 }

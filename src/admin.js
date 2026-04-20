@@ -41,7 +41,6 @@ const settingsInputs = {
   stepReviewTab: document.querySelector("#stepReviewTab"),
   stepReviewTitle: document.querySelector("#stepReviewTitle"),
   fieldEventCodeLabel: document.querySelector("#fieldEventCodeLabel"),
-  fieldEventCodePlaceholder: document.querySelector("#fieldEventCodePlaceholder"),
   fieldMatchNumberLabel: document.querySelector("#fieldMatchNumberLabel"),
   fieldTeamNumberLabel: document.querySelector("#fieldTeamNumberLabel"),
   fieldScoutNameLabel: document.querySelector("#fieldScoutNameLabel"),
@@ -115,7 +114,6 @@ function renderFormSettings() {
   settingsInputs.stepReviewTab.value = settings.steps.review.tab;
   settingsInputs.stepReviewTitle.value = settings.steps.review.title;
   settingsInputs.fieldEventCodeLabel.value = settings.fields.eventCode.label;
-  settingsInputs.fieldEventCodePlaceholder.value = settings.fields.eventCode.placeholder;
   settingsInputs.fieldMatchNumberLabel.value = settings.fields.matchNumber.label;
   settingsInputs.fieldTeamNumberLabel.value = settings.fields.teamNumber.label;
   settingsInputs.fieldScoutNameLabel.value = settings.fields.scoutName.label;
@@ -325,7 +323,6 @@ function collectFormSettings() {
     fields: {
       eventCode: {
         label: settingsInputs.fieldEventCodeLabel.value,
-        placeholder: settingsInputs.fieldEventCodePlaceholder.value,
       },
       matchNumber: { label: settingsInputs.fieldMatchNumberLabel.value },
       teamNumber: { label: settingsInputs.fieldTeamNumberLabel.value },
