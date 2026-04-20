@@ -606,6 +606,10 @@ textarea:focus {
     flex-direction: column;
   }
 
+  .section-header .ghost-button {
+    width: 100%;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }

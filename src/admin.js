@@ -18,6 +18,7 @@ const els = {
   questionOptions: document.querySelector("#questionOptions"),
   questionStatus: document.querySelector("#questionStatus"),
   resetQuestionButton: document.querySelector("#resetQuestionButton"),
+  loadTemplateButton: document.querySelector("#loadTemplateButton"),
   adminQuestionList: document.querySelector("#adminQuestionList"),
 };
 
@@ -87,6 +88,7 @@ function slugify(value) {
 
 function bindEvents() {
   els.resetQuestionButton.addEventListener("click", resetQuestionEditor);
+  els.loadTemplateButton.addEventListener("click", loadRebuiltTemplate);
 
   els.questionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -134,6 +136,24 @@ function bindEvents() {
   });
 }
 
+async function loadRebuiltTemplate() {
+  if (!confirm("Load the full REBUILT template? This adds or updates template questions but keeps any custom questions with different IDs.")) {
+    return;
+  }
+
+  setMessage(els.questionStatus, "Loading REBUILT template...");
+  const rows = defaultQuestions.map(toQuestionRow);
+  const { error } = await supabase.from("questions").upsert(rows);
+
+  if (error) {
+    setMessage(els.questionStatus, error.message, true);
+    return;
+  }
+
+  setMessage(els.questionStatus, "REBUILT template loaded. You can edit any question below.");
+  await loadQuestions();
+}
+
 async function loadQuestions() {
   setStatus("Syncing", "");
   const { data, error } = await supabase.from("questions").select("*").order("question_order", { ascending: true });
@@ -169,6 +189,19 @@ function fromQuestionRow(row) {
     order: row.question_order,
     required: row.required,
     options: row.options || [],
+  };
+}
+
+function toQuestionRow(question) {
+  return {
+    id: question.id,
+    label: question.label,
+    type: question.type,
+    phase: question.phase,
+    question_order: Number(question.order || 0),
+    required: Boolean(question.required),
+    options: question.options || [],
+    updated_at: new Date().toISOString(),
   };
 }
 
