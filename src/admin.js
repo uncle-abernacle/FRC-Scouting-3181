@@ -47,7 +47,6 @@ const settingsInputs = {
   fieldAllianceOptions: document.querySelector("#fieldAllianceOptions"),
   fieldStationOptions: document.querySelector("#fieldStationOptions"),
   fieldStartingLocationOptions: document.querySelector("#fieldStartingLocationOptions"),
-  fieldPreloadFuelLabel: document.querySelector("#fieldPreloadFuelLabel"),
   fieldNotesLabel: document.querySelector("#fieldNotesLabel"),
 };
 
@@ -120,7 +119,6 @@ function renderFormSettings() {
   settingsInputs.fieldAllianceOptions.value = settings.fields.alliance.options.join(", ");
   settingsInputs.fieldStationOptions.value = settings.fields.station.options.join(", ");
   settingsInputs.fieldStartingLocationOptions.value = settings.fields.startingLocation.options.join(", ");
-  settingsInputs.fieldPreloadFuelLabel.value = settings.fields.preloadFuel.label;
   settingsInputs.fieldNotesLabel.value = settings.fields.notes.label;
 }
 
@@ -330,7 +328,6 @@ function collectFormSettings() {
       alliance: { options: parseOptions(settingsInputs.fieldAllianceOptions.value) },
       station: { options: parseOptions(settingsInputs.fieldStationOptions.value) },
       startingLocation: { options: parseOptions(settingsInputs.fieldStartingLocationOptions.value) },
-      preloadFuel: { label: settingsInputs.fieldPreloadFuelLabel.value },
       notes: { label: settingsInputs.fieldNotesLabel.value },
     },
   });

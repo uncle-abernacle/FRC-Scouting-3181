@@ -77,7 +77,6 @@ function renderDetail(submission) {
       ${detailRow("Event", submission.event_code)}
       ${detailRow("Alliance", `${submission.alliance || ""} ${submission.station || ""}`.trim())}
       ${detailRow("Starting location", submission.starting_location || "Not entered")}
-      ${detailRow("Preload game pieces", submission.preload_fuel || "Not entered")}
       ${detailRow("Scout", submission.scout_name)}
       ${detailRow("Scout email", submission.scout_email)}
       ${detailRow("Submitted", formatDate(submission.created_at))}
@@ -145,7 +144,6 @@ function exportCsv() {
       "alliance",
       "station",
       "startingLocation",
-      "preloadGamePieces",
       "notes",
       "answers",
     ],
@@ -158,7 +156,6 @@ function exportCsv() {
       submission.alliance,
       submission.station,
       submission.starting_location,
-      submission.preload_fuel,
       submission.notes,
       submission.answers,
     ]),

@@ -18,7 +18,6 @@ export const defaultFormSettings = {
       required: false,
       options: ["Left", "Center", "Right", "Source side", "Scoring side"],
     },
-    preloadFuel: { label: "Preload game pieces", placeholder: "", required: false },
     notes: { label: "Extra notes", placeholder: "Defense, driver skill, weird moments..." },
   },
 };

@@ -87,7 +87,6 @@ function applyFormSettings() {
   applyFieldSetting("alliance", settings.fields.alliance);
   applyFieldSetting("station", settings.fields.station);
   applyFieldSetting("startingLocation", settings.fields.startingLocation);
-  applyFieldSetting("preloadFuel", settings.fields.preloadFuel);
   applyFieldSetting("notes", settings.fields.notes);
 }
 
@@ -297,7 +296,6 @@ function bindEvents() {
       alliance: formData.get("alliance"),
       station: formData.get("station"),
       starting_location: formData.get("startingLocation"),
-      preload_fuel: formData.get("preloadFuel"),
       notes: formData.get("notes"),
       answers: collectAnswers(formData),
       device_created_at: new Date().toISOString(),
