@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { setupAuthedPage } from "./auth.js";
+import { defaultFormSettings, mergeFormSettings } from "./formSettings.js";
 import { defaultQuestions, sortQuestions } from "./questions.js";
 import { emptyState, setMessage, setStatus } from "./ui.js";
 
@@ -7,6 +8,7 @@ const state = {
   questions: defaultQuestions,
   user: null,
   currentStep: 0,
+  formSettings: defaultFormSettings,
 };
 
 const steps = ["prematch", "auto", "teleop", "endgame", "review"];
@@ -61,6 +63,58 @@ function renderQuestions() {
       stack.append(emptyState("No questions for this phase", "Admins can add questions for this part of the match."));
     }
   });
+}
+
+function applyFormSettings() {
+  const settings = mergeFormSettings(state.formSettings);
+
+  Object.entries(settings.steps).forEach(([key, step]) => {
+    const progress = document.querySelector(`[data-step-target="${CSS.escape(key)}"]`);
+    const panel = document.querySelector(`[data-step="${CSS.escape(key)}"]`);
+    if (progress) progress.textContent = step.tab;
+    if (panel) {
+      const eyebrow = panel.querySelector(".eyebrow");
+      const title = panel.querySelector("h3");
+      if (eyebrow) eyebrow.textContent = step.eyebrow;
+      if (title) title.textContent = step.title;
+    }
+  });
+
+  applyFieldSetting("eventCode", settings.fields.eventCode);
+  applyFieldSetting("matchNumber", settings.fields.matchNumber);
+  applyFieldSetting("teamNumber", settings.fields.teamNumber);
+  applyFieldSetting("scoutName", settings.fields.scoutName);
+  applyFieldSetting("alliance", settings.fields.alliance);
+  applyFieldSetting("station", settings.fields.station);
+  applyFieldSetting("startingLocation", settings.fields.startingLocation);
+  applyFieldSetting("preloadFuel", settings.fields.preloadFuel);
+  applyFieldSetting("notes", settings.fields.notes);
+}
+
+function applyFieldSetting(fieldId, setting) {
+  const field = document.querySelector(`#${fieldId}`);
+  if (!field || !setting) return;
+
+  const labelText = field.closest("label")?.querySelector("span");
+  if (labelText && setting.label) labelText.textContent = setting.label;
+
+  if ("placeholder" in setting && "placeholder" in field) {
+    field.placeholder = setting.placeholder || "";
+  }
+
+  if ("required" in setting) {
+    field.required = Boolean(setting.required);
+  }
+
+  if (field.tagName === "SELECT" && Array.isArray(setting.options)) {
+    const currentValue = field.value;
+    field.innerHTML = "";
+    field.append(new Option("Choose", ""));
+    setting.options.forEach((option) => {
+      field.append(new Option(option, option.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")));
+    });
+    field.value = currentValue;
+  }
 }
 
 function buildQuestionInput(question) {
@@ -305,10 +359,33 @@ async function loadQuestions() {
   setStatus("Online", "online");
 }
 
+async function loadFormSettings() {
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("settings")
+    .eq("id", "scout_form")
+    .maybeSingle();
+
+  if (error) {
+    console.warn(error);
+  }
+
+  state.formSettings = mergeFormSettings(data?.settings || defaultFormSettings);
+  applyFormSettings();
+  restoreDraft();
+}
+
 function subscribeToQuestions() {
   supabase
     .channel("questions-scout")
     .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, loadQuestions)
+    .subscribe();
+}
+
+function subscribeToFormSettings() {
+  supabase
+    .channel("app-settings-scout")
+    .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, loadFormSettings)
     .subscribe();
 }
 
@@ -327,15 +404,19 @@ function fromQuestionRow(row) {
 if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
   setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
+  applyFormSettings();
   renderQuestions();
   showStep(0);
 } else {
   state.user = await setupAuthedPage();
   if (state.user) {
     bindEvents();
+    applyFormSettings();
     renderQuestions();
     showStep(0);
     await loadQuestions();
+    await loadFormSettings();
     subscribeToQuestions();
+    subscribeToFormSettings();
   }
 }

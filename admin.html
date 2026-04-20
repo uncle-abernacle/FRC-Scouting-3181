@@ -52,6 +52,103 @@
           <div class="template-tabs" id="templateTabs" aria-label="Saved templates"></div>
         </section>
 
+        <section class="template-panel" aria-labelledby="settings-title">
+          <div class="item-topline">
+            <div>
+              <p class="eyebrow">Form settings</p>
+              <h3 id="settings-title">Prematch and pages</h3>
+            </div>
+          </div>
+          <form id="formSettingsForm" class="settings-editor">
+            <div class="form-grid">
+              <label>
+                <span>Prematch tab</span>
+                <input id="stepPrematchTab" />
+              </label>
+              <label>
+                <span>Prematch title</span>
+                <input id="stepPrematchTitle" />
+              </label>
+              <label>
+                <span>Auto tab</span>
+                <input id="stepAutoTab" />
+              </label>
+              <label>
+                <span>Auto title</span>
+                <input id="stepAutoTitle" />
+              </label>
+              <label>
+                <span>Teleop tab</span>
+                <input id="stepTeleopTab" />
+              </label>
+              <label>
+                <span>Teleop title</span>
+                <input id="stepTeleopTitle" />
+              </label>
+              <label>
+                <span>Endgame tab</span>
+                <input id="stepEndgameTab" />
+              </label>
+              <label>
+                <span>Endgame title</span>
+                <input id="stepEndgameTitle" />
+              </label>
+              <label>
+                <span>Review tab</span>
+                <input id="stepReviewTab" />
+              </label>
+              <label>
+                <span>Review title</span>
+                <input id="stepReviewTitle" />
+              </label>
+              <label>
+                <span>Event label</span>
+                <input id="fieldEventCodeLabel" />
+              </label>
+              <label>
+                <span>Event placeholder</span>
+                <input id="fieldEventCodePlaceholder" />
+              </label>
+              <label>
+                <span>Match label</span>
+                <input id="fieldMatchNumberLabel" />
+              </label>
+              <label>
+                <span>Team label</span>
+                <input id="fieldTeamNumberLabel" />
+              </label>
+              <label>
+                <span>Scout label</span>
+                <input id="fieldScoutNameLabel" />
+              </label>
+              <label>
+                <span>Alliance options</span>
+                <input id="fieldAllianceOptions" placeholder="Red, Blue" />
+              </label>
+              <label>
+                <span>Robot position options</span>
+                <input id="fieldStationOptions" placeholder="1, 2, 3" />
+              </label>
+              <label>
+                <span>Starting location options</span>
+                <input id="fieldStartingLocationOptions" />
+              </label>
+              <label>
+                <span>Preload label</span>
+                <input id="fieldPreloadFuelLabel" />
+              </label>
+              <label>
+                <span>Notes label</span>
+                <input id="fieldNotesLabel" />
+              </label>
+            </div>
+            <div class="action-row">
+              <button class="primary-button" type="submit">Save form settings</button>
+              <button class="ghost-button" id="resetSettingsButton" type="button">Reset defaults</button>
+            </div>
+          </form>
+        </section>
+
         <form id="questionForm" class="question-editor">
           <input type="hidden" id="questionId" />
           <label>
@@ -112,6 +209,6 @@
       </div>
     </template>
 
-    <script type="module" src="src/admin.js?v=custom-templates-20260420"></script>
+    <script type="module" src="src/admin.js?v=form-settings-20260420b"></script>
   </body>
 </html>

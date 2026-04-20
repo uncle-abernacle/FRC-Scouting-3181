@@ -22,7 +22,14 @@ create table if not exists public.question_templates (
   id uuid primary key default gen_random_uuid(),
   name text unique not null,
   questions jsonb not null default '[]',
+  settings jsonb not null default '{}',
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_settings (
+  id text primary key,
+  settings jsonb not null default '{}',
   updated_at timestamptz not null default now()
 );
 
@@ -47,10 +54,12 @@ create table if not exists public.submissions (
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
 alter table public.question_templates enable row level security;
+alter table public.app_settings enable row level security;
 alter table public.submissions enable row level security;
 
 alter table public.submissions add column if not exists starting_location text;
 alter table public.submissions add column if not exists preload_fuel text;
+alter table public.question_templates add column if not exists settings jsonb not null default '{}';
 
 create or replace function public.is_admin()
 returns boolean
@@ -107,6 +116,19 @@ using (public.is_admin());
 drop policy if exists "Admins can manage templates" on public.question_templates;
 create policy "Admins can manage templates"
 on public.question_templates for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Anyone signed in can read app settings" on public.app_settings;
+create policy "Anyone signed in can read app settings"
+on public.app_settings for select
+to authenticated
+using (true);
+
+drop policy if exists "Admins can manage app settings" on public.app_settings;
+create policy "Admins can manage app settings"
+on public.app_settings for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());

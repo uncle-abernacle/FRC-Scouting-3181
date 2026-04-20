@@ -11,6 +11,7 @@ Mobile-first scouting app for FRC Team 3181. Scouts create username/password acc
 - Dynamic questions stored in Supabase Postgres
 - Question editor for counter, number, select, toggle, and text questions
 - Admin-created templates that can be loaded into the live scouting form
+- Admin-editable prematch labels, page names, dropdown options, and notes label
 - Recent submission viewer and CSV export
 - Local draft saving so accidental refreshes do not wipe a scout's form
 - Row Level Security policies for signed-in submissions and admin-only data access
@@ -55,6 +56,8 @@ Only admin users can see the Admin and Data links. RLS also blocks non-admin acc
 If there are no Supabase questions yet, the app shows starter questions locally so you can test the flow immediately.
 
 Admins can create templates from the current live question set. Template tabs on the Admin page load a saved template into the live scouting form, replacing the current live questions.
+
+Admins can also edit the fixed parts of the form from the Admin page: phase tab names, page titles, prematch field labels, prematch dropdown options, and the notes label. Templates save both the live questions and these form settings.
 
 ## Local testing
 

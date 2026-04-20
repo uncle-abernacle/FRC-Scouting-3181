@@ -69,7 +69,15 @@ function wireSignOut() {
 
   button.dataset.bound = "true";
   button.addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    window.location.replace("index.html");
+    try {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      localStorage.removeItem("scoutDraft3181");
+      window.location.href = "index.html";
+    }
   });
 }

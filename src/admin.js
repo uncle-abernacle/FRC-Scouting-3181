@@ -1,11 +1,13 @@
 import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { requireAdmin } from "./auth.js";
+import { defaultFormSettings, mergeFormSettings } from "./formSettings.js";
 import { defaultQuestions, sortQuestions } from "./questions.js";
 import { emptyState, escapeHtml, setMessage, setStatus } from "./ui.js";
 
 const state = {
   questions: defaultQuestions,
   templates: [],
+  formSettings: defaultFormSettings,
 };
 
 const els = {
@@ -22,7 +24,32 @@ const els = {
   templateName: document.querySelector("#templateName"),
   createTemplateButton: document.querySelector("#createTemplateButton"),
   templateTabs: document.querySelector("#templateTabs"),
+  formSettingsForm: document.querySelector("#formSettingsForm"),
+  resetSettingsButton: document.querySelector("#resetSettingsButton"),
   adminQuestionList: document.querySelector("#adminQuestionList"),
+};
+
+const settingsInputs = {
+  stepPrematchTab: document.querySelector("#stepPrematchTab"),
+  stepPrematchTitle: document.querySelector("#stepPrematchTitle"),
+  stepAutoTab: document.querySelector("#stepAutoTab"),
+  stepAutoTitle: document.querySelector("#stepAutoTitle"),
+  stepTeleopTab: document.querySelector("#stepTeleopTab"),
+  stepTeleopTitle: document.querySelector("#stepTeleopTitle"),
+  stepEndgameTab: document.querySelector("#stepEndgameTab"),
+  stepEndgameTitle: document.querySelector("#stepEndgameTitle"),
+  stepReviewTab: document.querySelector("#stepReviewTab"),
+  stepReviewTitle: document.querySelector("#stepReviewTitle"),
+  fieldEventCodeLabel: document.querySelector("#fieldEventCodeLabel"),
+  fieldEventCodePlaceholder: document.querySelector("#fieldEventCodePlaceholder"),
+  fieldMatchNumberLabel: document.querySelector("#fieldMatchNumberLabel"),
+  fieldTeamNumberLabel: document.querySelector("#fieldTeamNumberLabel"),
+  fieldScoutNameLabel: document.querySelector("#fieldScoutNameLabel"),
+  fieldAllianceOptions: document.querySelector("#fieldAllianceOptions"),
+  fieldStationOptions: document.querySelector("#fieldStationOptions"),
+  fieldStartingLocationOptions: document.querySelector("#fieldStartingLocationOptions"),
+  fieldPreloadFuelLabel: document.querySelector("#fieldPreloadFuelLabel"),
+  fieldNotesLabel: document.querySelector("#fieldNotesLabel"),
 };
 
 function sortedQuestions() {
@@ -75,6 +102,30 @@ function renderTemplates() {
   });
 }
 
+function renderFormSettings() {
+  const settings = mergeFormSettings(state.formSettings);
+  settingsInputs.stepPrematchTab.value = settings.steps.prematch.tab;
+  settingsInputs.stepPrematchTitle.value = settings.steps.prematch.title;
+  settingsInputs.stepAutoTab.value = settings.steps.auto.tab;
+  settingsInputs.stepAutoTitle.value = settings.steps.auto.title;
+  settingsInputs.stepTeleopTab.value = settings.steps.teleop.tab;
+  settingsInputs.stepTeleopTitle.value = settings.steps.teleop.title;
+  settingsInputs.stepEndgameTab.value = settings.steps.endgame.tab;
+  settingsInputs.stepEndgameTitle.value = settings.steps.endgame.title;
+  settingsInputs.stepReviewTab.value = settings.steps.review.tab;
+  settingsInputs.stepReviewTitle.value = settings.steps.review.title;
+  settingsInputs.fieldEventCodeLabel.value = settings.fields.eventCode.label;
+  settingsInputs.fieldEventCodePlaceholder.value = settings.fields.eventCode.placeholder;
+  settingsInputs.fieldMatchNumberLabel.value = settings.fields.matchNumber.label;
+  settingsInputs.fieldTeamNumberLabel.value = settings.fields.teamNumber.label;
+  settingsInputs.fieldScoutNameLabel.value = settings.fields.scoutName.label;
+  settingsInputs.fieldAllianceOptions.value = settings.fields.alliance.options.join(", ");
+  settingsInputs.fieldStationOptions.value = settings.fields.station.options.join(", ");
+  settingsInputs.fieldStartingLocationOptions.value = settings.fields.startingLocation.options.join(", ");
+  settingsInputs.fieldPreloadFuelLabel.value = settings.fields.preloadFuel.label;
+  settingsInputs.fieldNotesLabel.value = settings.fields.notes.label;
+}
+
 function resetQuestionEditor() {
   els.questionId.value = "";
   els.questionLabel.value = "";
@@ -110,6 +161,11 @@ function slugify(value) {
 function bindEvents() {
   els.resetQuestionButton.addEventListener("click", resetQuestionEditor);
   els.createTemplateButton.addEventListener("click", createTemplate);
+  els.formSettingsForm.addEventListener("submit", saveFormSettings);
+  els.resetSettingsButton.addEventListener("click", () => {
+    state.formSettings = defaultFormSettings;
+    renderFormSettings();
+  });
   els.templateTabs.addEventListener("click", (event) => {
     const templateId = event.target.dataset.templateId;
     if (templateId) {
@@ -185,6 +241,7 @@ async function createTemplate() {
     {
       name,
       questions,
+      settings: state.formSettings,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "name" },
@@ -225,8 +282,68 @@ async function loadTemplate(templateId) {
     }
   }
 
+  await saveSettings(template.settings || defaultFormSettings, false);
   setMessage(els.questionStatus, `${template.name} loaded into the live scouting form.`);
   await loadQuestions();
+  await loadFormSettings();
+}
+
+async function saveFormSettings(event) {
+  event.preventDefault();
+  const settings = collectFormSettings();
+  await saveSettings(settings, true);
+}
+
+async function saveSettings(settings, shouldMessage) {
+  state.formSettings = mergeFormSettings(settings);
+  const { error } = await supabase.from("app_settings").upsert({
+    id: "scout_form",
+    settings: state.formSettings,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    setMessage(els.questionStatus, error.message, true);
+    return;
+  }
+
+  renderFormSettings();
+  if (shouldMessage) {
+    setMessage(els.questionStatus, "Form settings saved.");
+  }
+}
+
+function collectFormSettings() {
+  return mergeFormSettings({
+    steps: {
+      prematch: { tab: settingsInputs.stepPrematchTab.value, title: settingsInputs.stepPrematchTitle.value },
+      auto: { tab: settingsInputs.stepAutoTab.value, title: settingsInputs.stepAutoTitle.value },
+      teleop: { tab: settingsInputs.stepTeleopTab.value, title: settingsInputs.stepTeleopTitle.value },
+      endgame: { tab: settingsInputs.stepEndgameTab.value, title: settingsInputs.stepEndgameTitle.value },
+      review: { tab: settingsInputs.stepReviewTab.value, title: settingsInputs.stepReviewTitle.value },
+    },
+    fields: {
+      eventCode: {
+        label: settingsInputs.fieldEventCodeLabel.value,
+        placeholder: settingsInputs.fieldEventCodePlaceholder.value,
+      },
+      matchNumber: { label: settingsInputs.fieldMatchNumberLabel.value },
+      teamNumber: { label: settingsInputs.fieldTeamNumberLabel.value },
+      scoutName: { label: settingsInputs.fieldScoutNameLabel.value },
+      alliance: { options: parseOptions(settingsInputs.fieldAllianceOptions.value) },
+      station: { options: parseOptions(settingsInputs.fieldStationOptions.value) },
+      startingLocation: { options: parseOptions(settingsInputs.fieldStartingLocationOptions.value) },
+      preloadFuel: { label: settingsInputs.fieldPreloadFuelLabel.value },
+      notes: { label: settingsInputs.fieldNotesLabel.value },
+    },
+  });
+}
+
+function parseOptions(value) {
+  return value
+    .split(",")
+    .map((option) => option.trim())
+    .filter(Boolean);
 }
 
 async function loadQuestions() {
@@ -260,6 +377,28 @@ async function loadTemplates() {
 
   state.templates = data || [];
   renderTemplates();
+}
+
+async function loadFormSettings() {
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("settings")
+    .eq("id", "scout_form")
+    .maybeSingle();
+
+  if (error) {
+    console.warn(error);
+  }
+
+  state.formSettings = mergeFormSettings(data?.settings || defaultFormSettings);
+  renderFormSettings();
+}
+
+function subscribeToFormSettings() {
+  supabase
+    .channel("app-settings-admin")
+    .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, loadFormSettings)
+    .subscribe();
 }
 
 function subscribeToTemplates() {
@@ -308,8 +447,11 @@ if (!isSupabaseConfigured) {
   resetQuestionEditor();
   renderAdminQuestions();
   renderTemplates();
+  renderFormSettings();
   await loadQuestions();
   await loadTemplates();
+  await loadFormSettings();
   subscribeToQuestions();
   subscribeToTemplates();
+  subscribeToFormSettings();
 }

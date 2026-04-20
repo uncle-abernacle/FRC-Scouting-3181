@@ -260,7 +260,8 @@ h3 {
 
 .scout-form,
 .auth-panel,
-.question-editor {
+.question-editor,
+.settings-editor {
   display: grid;
   gap: 16px;
 }
