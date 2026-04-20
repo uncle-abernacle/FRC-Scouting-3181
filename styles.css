@@ -320,11 +320,14 @@ h3 {
 }
 
 .segment {
+  display: grid;
+  place-items: center;
   min-height: 44px;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   font-weight: 900;
+  text-decoration: none;
   transition:
     background 180ms ease,
     color 180ms ease,

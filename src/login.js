@@ -16,19 +16,29 @@ let mode = "signin";
 
 setStatus(isSupabaseConfigured ? "Ready" : "Needs config", isSupabaseConfigured ? "online" : "offline");
 
-if (new URLSearchParams(window.location.search).get("signout") === "1") {
+const params = new URLSearchParams(window.location.search);
+
+if (params.get("signout") === "1") {
   await clearSession();
   window.history.replaceState({}, "", "index.html");
   setMessage(status, "Signed out.");
 }
+
+setMode(params.get("mode") === "signup" ? "signup" : "signin", false);
 
 authState().then(async (user) => {
   if (!user) return;
   window.location.replace((await getAdminStatus(user)) ? "admin.html" : "scout.html");
 });
 
-signInMode.addEventListener("click", () => setMode("signin"));
-signUpMode.addEventListener("click", () => setMode("signup"));
+signInMode.addEventListener("click", (event) => {
+  event.preventDefault();
+  setMode("signin");
+});
+signUpMode.addEventListener("click", (event) => {
+  event.preventDefault();
+  setMode("signup");
+});
 passwordToggle.addEventListener("click", togglePasswordVisibility);
 
 form.addEventListener("submit", async (event) => {
@@ -59,14 +69,19 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-function setMode(nextMode) {
+function setMode(nextMode, shouldUpdateUrl = true) {
   mode = nextMode;
   const isSignup = mode === "signup";
   title.textContent = isSignup ? "Sign up" : "Sign in";
   authButton.textContent = isSignup ? "Make account" : "Enter app";
   signInMode.classList.toggle("active", !isSignup);
   signUpMode.classList.toggle("active", isSignup);
+  signInMode.setAttribute("aria-selected", String(!isSignup));
+  signUpMode.setAttribute("aria-selected", String(isSignup));
   passwordInput.autocomplete = "off";
+  if (shouldUpdateUrl) {
+    window.history.replaceState({}, "", `index.html?mode=${mode}`);
+  }
   setMessage(status, "");
 }
 
