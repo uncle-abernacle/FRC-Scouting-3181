@@ -183,7 +183,6 @@ function buildQuestionInput(question) {
     input.name = name;
     input.type = "number";
     input.inputMode = "numeric";
-    input.autocomplete = "off";
     input.required = required;
     return input;
   }
@@ -191,9 +190,6 @@ function buildQuestionInput(question) {
   const textarea = document.createElement("textarea");
   textarea.name = name;
   textarea.rows = 3;
-  textarea.autocomplete = "off";
-  textarea.spellcheck = false;
-  textarea.autocapitalize = "none";
   textarea.required = required;
   return textarea;
 }

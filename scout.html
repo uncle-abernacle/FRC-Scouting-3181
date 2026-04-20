@@ -36,7 +36,7 @@
           <button class="ghost-button" id="clearDraftButton" type="button">Clear</button>
         </div>
 
-        <form id="scoutForm" class="scout-form" autocomplete="off">
+        <form id="scoutForm" class="scout-form">
           <div class="scout-progress" aria-label="Scouting progress">
             <button class="progress-step active" type="button" data-step-target="prematch">Prematch</button>
             <button class="progress-step" type="button" data-step-target="auto">Auto</button>
@@ -51,19 +51,19 @@
             <div class="form-grid">
               <label>
                 <span>Event</span>
-                <input id="eventCode" name="eventCode" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+                <input id="eventCode" name="eventCode" autocomplete="off" required />
               </label>
               <label>
                 <span>Match</span>
-                <input id="matchNumber" name="matchNumber" autocomplete="off" inputmode="numeric" required />
+                <input id="matchNumber" name="matchNumber" inputmode="numeric" required />
               </label>
               <label>
                 <span>Team</span>
-                <input id="teamNumber" name="teamNumber" autocomplete="off" inputmode="numeric" required />
+                <input id="teamNumber" name="teamNumber" inputmode="numeric" required />
               </label>
               <label>
                 <span>Scout</span>
-                <input id="scoutName" name="scoutName" autocomplete="off" autocapitalize="words" spellcheck="false" required />
+                <input id="scoutName" name="scoutName" autocomplete="name" required />
               </label>
               <label>
                 <span>Alliance</span>
@@ -95,7 +95,7 @@
               </label>
               <label>
                 <span>Preload game pieces</span>
-                <input id="preloadFuel" name="preloadFuel" autocomplete="off" inputmode="numeric" />
+                <input id="preloadFuel" name="preloadFuel" inputmode="numeric" />
               </label>
             </div>
           </section>
@@ -145,6 +145,6 @@
       </div>
     </template>
 
-    <script type="module" src="src/scout.js?v=no-suggestions-20260420b"></script>
+    <script type="module" src="src/scout.js?v=signout-fix-20260420"></script>
   </body>
 </html>

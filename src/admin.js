@@ -51,11 +51,6 @@ const settingsInputs = {
   fieldNotesLabel: document.querySelector("#fieldNotesLabel"),
 };
 
-document.querySelectorAll("input, textarea").forEach((field) => {
-  field.autocomplete = "off";
-  field.spellcheck = false;
-});
-
 function sortedQuestions() {
   return sortQuestions(state.questions);
 }
