@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050005" />
+    <meta
+      name="description"
+      content="Team 3181 mobile FRC scouting app with Firebase-powered questions and admin controls."
+    />
+    <title>3181 FRC Scouting</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Team 3181</p>
+          <h1 id="app-title">FRC Scouting</h1>
+          <p class="hero-copy">Fast phone scouting with live questions, smooth match flow, and admin control.</p>
+        </div>
+        <div class="status-pill" id="connectionStatus">Connecting</div>
+      </section>
+
+      <nav class="tab-bar" aria-label="App views">
+        <button class="tab-button active" type="button" data-view-target="scoutView">Scout</button>
+        <button class="tab-button" type="button" data-view-target="adminView">Admin</button>
+        <button class="tab-button" type="button" data-view-target="dataView">Data</button>
+      </nav>
+
+      <section class="view active" id="scoutView" aria-labelledby="scout-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Match entry</p>
+            <h2 id="scout-title">Scout a robot</h2>
+          </div>
+          <button class="ghost-button" id="clearDraftButton" type="button">Clear</button>
+        </div>
+
+        <form id="scoutForm" class="scout-form">
+          <div class="form-grid">
+            <label>
+              <span>Event</span>
+              <input id="eventCode" name="eventCode" autocomplete="off" placeholder="2026miket" required />
+            </label>
+            <label>
+              <span>Match</span>
+              <input id="matchNumber" name="matchNumber" inputmode="numeric" placeholder="12" required />
+            </label>
+            <label>
+              <span>Team</span>
+              <input id="teamNumber" name="teamNumber" inputmode="numeric" placeholder="3181" required />
+            </label>
+            <label>
+              <span>Scout</span>
+              <input id="scoutName" name="scoutName" autocomplete="name" placeholder="Your name" required />
+            </label>
+            <label>
+              <span>Alliance</span>
+              <select id="alliance" name="alliance" required>
+                <option value="">Choose</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+              </select>
+            </label>
+            <label>
+              <span>Robot position</span>
+              <select id="station" name="station" required>
+                <option value="">Choose</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="question-stack" id="questionStack"></div>
+
+          <label class="full-field">
+            <span>Extra notes</span>
+            <textarea id="notes" name="notes" rows="4" placeholder="Defense, driver skill, weird moments..."></textarea>
+          </label>
+
+          <div class="action-row">
+            <button class="primary-button" type="submit">Submit scouting</button>
+            <p class="form-status" id="submitStatus" role="status"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="view" id="adminView" aria-labelledby="admin-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Firebase admin</p>
+            <h2 id="admin-title">Question builder</h2>
+          </div>
+          <button class="ghost-button hidden" id="signOutButton" type="button">Sign out</button>
+        </div>
+
+        <form class="auth-panel" id="loginForm">
+          <label>
+            <span>Email</span>
+            <input id="adminEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="adminPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="primary-button" type="submit">Sign in</button>
+          <p class="form-status" id="authStatus" role="status"></p>
+        </form>
+
+        <div class="admin-panel hidden" id="adminPanel">
+          <form id="questionForm" class="question-editor">
+            <input type="hidden" id="questionId" />
+            <label>
+              <span>Question label</span>
+              <input id="questionLabel" placeholder="Speaker notes scored" required />
+            </label>
+            <div class="form-grid">
+              <label>
+                <span>Type</span>
+                <select id="questionType" required>
+                  <option value="counter">Counter</option>
+                  <option value="number">Number</option>
+                  <option value="select">Select</option>
+                  <option value="toggle">Toggle</option>
+                  <option value="text">Text</option>
+                </select>
+              </label>
+              <label>
+                <span>Phase</span>
+                <select id="questionPhase" required>
+                  <option value="auto">Auto</option>
+                  <option value="teleop">Teleop</option>
+                  <option value="endgame">Endgame</option>
+                  <option value="overall">Overall</option>
+                </select>
+              </label>
+              <label>
+                <span>Order</span>
+                <input id="questionOrder" type="number" inputmode="numeric" value="1" required />
+              </label>
+              <label>
+                <span>Required</span>
+                <select id="questionRequired">
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>Options for select, comma separated</span>
+              <input id="questionOptions" placeholder="None, Parked, Onstage, Harmony" />
+            </label>
+            <div class="action-row">
+              <button class="primary-button" type="submit">Save question</button>
+              <button class="ghost-button" id="resetQuestionButton" type="button">New</button>
+              <p class="form-status" id="questionStatus" role="status"></p>
+            </div>
+          </form>
+
+          <div class="admin-list" id="adminQuestionList"></div>
+        </div>
+      </section>
+
+      <section class="view" id="dataView" aria-labelledby="data-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Recent submissions</p>
+            <h2 id="data-title">Match data</h2>
+          </div>
+          <button class="ghost-button" id="exportButton" type="button">Export CSV</button>
+        </div>
+        <div class="submission-list" id="submissionList"></div>
+      </section>
+    </main>
+
+    <template id="emptyStateTemplate">
+      <div class="empty-state">
+        <strong>No items yet</strong>
+        <span>Once Firebase has data, it will appear here.</span>
+      </div>
+    </template>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

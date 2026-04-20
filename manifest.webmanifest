@@ -1,0 +1,17 @@
+{
+  "name": "3181 FRC Scouting",
+  "short_name": "3181 Scout",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#050005",
+  "theme_color": "#ff3fa4",
+  "description": "Mobile-first FRC scouting for Team 3181.",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
