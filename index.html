@@ -33,15 +33,15 @@
           <button class="segment" id="signUpMode" type="button">Sign up</button>
         </div>
 
-        <form class="auth-panel" id="loginForm">
+        <form class="auth-panel" id="loginForm" autocomplete="off">
           <label>
             <span>Username</span>
-            <input id="username" autocomplete="username" inputmode="text" pattern="[A-Za-z0-9_-]{3,24}" required />
+            <input id="username" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="text" pattern="[A-Za-z0-9_-]{3,24}" required />
           </label>
           <label>
             <span>Password</span>
             <span class="password-control">
-              <input id="password" type="password" autocomplete="current-password" required />
+              <input id="password" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required />
               <button class="password-toggle" id="passwordToggle" type="button" aria-pressed="false">Show</button>
             </span>
           </label>
@@ -51,6 +51,6 @@
       </section>
     </main>
 
-    <script type="module" src="src/login.js?v=signout-fix-20260420"></script>
+    <script type="module" src="src/login.js?v=no-suggestions-20260420b"></script>
   </body>
 </html>
