@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from "./supabase.js";
-import { authState, clearSession, getAdminStatus } from "./auth.js";
+import { authState, getAdminStatus, signOutAndRedirect } from "./auth.js";
 import { setMessage, setStatus } from "./ui.js";
 
 const form = document.querySelector("#loginForm");
@@ -17,9 +17,7 @@ let mode = "signin";
 setStatus(isSupabaseConfigured ? "Ready" : "Needs config", isSupabaseConfigured ? "online" : "offline");
 
 if (new URLSearchParams(window.location.search).get("signout") === "1") {
-  await clearSession();
-  window.history.replaceState({}, "", "index.html");
-  setMessage(status, "Signed out.");
+  await signOutAndRedirect();
 }
 
 authState().then(async (user) => {
