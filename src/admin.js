@@ -161,6 +161,7 @@ function bindEvents() {
   els.resetSettingsButton.addEventListener("click", () => {
     state.formSettings = defaultFormSettings;
     renderFormSettings();
+    saveSettings(defaultFormSettings, true);
   });
   els.templateTabs.addEventListener("click", (event) => {
     const templateId = event.target.dataset.templateId;
@@ -292,21 +293,38 @@ async function saveFormSettings(event) {
 
 async function saveSettings(settings, shouldMessage) {
   state.formSettings = mergeFormSettings(settings);
-  const { error } = await supabase.from("app_settings").upsert({
+  if (shouldMessage) {
+    setMessage(els.questionStatus, "Saving form settings...");
+  }
+
+  const { data, error } = await supabase.from("app_settings").upsert({
     id: "scout_form",
     settings: state.formSettings,
     updated_at: new Date().toISOString(),
-  });
+  }).select("settings").single();
 
   if (error) {
-    setMessage(els.questionStatus, error.message, true);
+    setMessage(els.questionStatus, formSettingsError(error), true);
     return;
   }
 
+  state.formSettings = mergeFormSettings(data?.settings || state.formSettings);
   renderFormSettings();
   if (shouldMessage) {
     setMessage(els.questionStatus, "Form settings saved.");
   }
+}
+
+function formSettingsError(error) {
+  if (error.code === "42P01" || error.message.includes("app_settings")) {
+    return "Form settings table is missing. Run supabase/schema.sql in Supabase, then save again.";
+  }
+
+  if (error.code === "42501" || error.message.toLowerCase().includes("row-level security")) {
+    return "Supabase blocked saving form settings. Make sure you are admin and rerun supabase/schema.sql.";
+  }
+
+  return error.message;
 }
 
 function collectFormSettings() {

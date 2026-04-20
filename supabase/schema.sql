@@ -51,6 +51,10 @@ create table if not exists public.submissions (
   device_created_at timestamptz
 );
 
+insert into public.app_settings (id, settings)
+values ('scout_form', '{}')
+on conflict (id) do nothing;
+
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
 alter table public.question_templates enable row level security;
