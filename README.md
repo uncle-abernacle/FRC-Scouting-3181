@@ -18,7 +18,7 @@ Mobile-first scouting app for FRC Team 3181. Scouts create username/password acc
 
 1. Create a Supabase project.
 2. In Authentication, keep Email provider enabled.
-3. For easiest username-only scouting, turn off email confirmation in Auth settings.
+3. For username-only scouting, turn off email confirmation in Auth settings.
 4. Open the SQL Editor and run `supabase/schema.sql`.
 5. Copy your project URL and anon public key into `src/supabase.js`.
 6. Start the app with `npm start`.
@@ -28,6 +28,8 @@ The app turns usernames into fake Supabase Auth emails using this format:
 ```text
 username@3181scouting.app
 ```
+
+If signup says `email rate limit exceeded`, Supabase is still trying to send confirmation emails. In the Supabase dashboard, go to **Authentication** -> **Sign In / Providers** -> **Email**, then turn off **Confirm email**. Wait about a minute for the rate limit to cool down before trying again.
 
 ## Marking an admin
 

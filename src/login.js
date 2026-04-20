@@ -144,9 +144,15 @@ function friendlyAuthError(error) {
     email_address_invalid: "Use a username with letters, numbers, underscores, or dashes.",
     email_exists: "That username is already taken.",
     invalid_credentials: "That username or password is wrong.",
+    over_email_send_rate_limit: "Supabase is trying to send confirmation emails. Turn off email confirmation in Supabase Auth settings, then try again.",
+    over_request_rate_limit: "Too many signup attempts. Wait a minute, then try again.",
     user_already_exists: "That username is already taken.",
     weak_password: "Use a stronger password.",
   };
+
+  if (String(error.message).toLowerCase().includes("email rate limit")) {
+    return "Supabase is trying to send confirmation emails. Turn off email confirmation in Supabase Auth settings, then try again.";
+  }
 
   return messages[error.code] || error.message;
 }
