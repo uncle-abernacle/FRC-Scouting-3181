@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050005" />
+    <meta name="description" content="Team 3181 mobile FRC scouting form." />
+    <title>Scout Match | 3181</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero compact" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Team 3181</p>
+          <h1 id="app-title">Scout Match</h1>
+          <p class="hero-copy">Fast match entry for phones. Your draft saves automatically on this device.</p>
+        </div>
+        <div class="status-pill" id="connectionStatus">Checking</div>
+      </section>
+
+      <nav class="top-nav" aria-label="App pages">
+        <a class="nav-link active" href="scout.html">Scout</a>
+        <a class="nav-link admin-only hidden" href="data.html">Data</a>
+        <a class="nav-link admin-only hidden" href="admin.html">Admin</a>
+        <button class="nav-link nav-button" id="signOutButton" type="button">Sign out</button>
+      </nav>
+
+      <section class="page-panel" aria-labelledby="scout-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Match entry</p>
+            <h2 id="scout-title">Scout a robot</h2>
+          </div>
+          <button class="ghost-button" id="clearDraftButton" type="button">Clear</button>
+        </div>
+
+        <form id="scoutForm" class="scout-form">
+          <div class="form-grid">
+            <label>
+              <span>Event</span>
+              <input id="eventCode" name="eventCode" autocomplete="off" placeholder="2026miket" required />
+            </label>
+            <label>
+              <span>Match</span>
+              <input id="matchNumber" name="matchNumber" inputmode="numeric" placeholder="12" required />
+            </label>
+            <label>
+              <span>Team</span>
+              <input id="teamNumber" name="teamNumber" inputmode="numeric" placeholder="3181" required />
+            </label>
+            <label>
+              <span>Scout</span>
+              <input id="scoutName" name="scoutName" autocomplete="name" placeholder="Your name" required />
+            </label>
+            <label>
+              <span>Alliance</span>
+              <select id="alliance" name="alliance" required>
+                <option value="">Choose</option>
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+              </select>
+            </label>
+            <label>
+              <span>Robot position</span>
+              <select id="station" name="station" required>
+                <option value="">Choose</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="question-stack" id="questionStack"></div>
+
+          <label class="full-field">
+            <span>Extra notes</span>
+            <textarea id="notes" name="notes" rows="4" placeholder="Defense, driver skill, weird moments..."></textarea>
+          </label>
+
+          <div class="action-row">
+            <button class="primary-button" type="submit">Submit scouting</button>
+            <p class="form-status" id="submitStatus" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <template id="emptyStateTemplate">
+      <div class="empty-state">
+        <strong>No items yet</strong>
+        <span>Once Firebase has data, it will appear here.</span>
+      </div>
+    </template>
+
+    <script type="module" src="src/scout.js"></script>
+  </body>
+</html>

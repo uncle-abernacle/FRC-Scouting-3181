@@ -56,6 +56,11 @@ button {
   padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
 }
 
+.auth-shell {
+  display: grid;
+  align-content: center;
+}
+
 .hero {
   display: flex;
   align-items: flex-end;
@@ -63,6 +68,10 @@ button {
   gap: 16px;
   min-height: 210px;
   padding: 26px 2px 18px;
+}
+
+.hero.compact {
+  min-height: 170px;
 }
 
 .eyebrow {
@@ -136,6 +145,57 @@ h2 {
   backdrop-filter: blur(18px);
 }
 
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(5, 0, 5, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.nav-link {
+  display: grid;
+  min-width: 84px;
+  min-height: 46px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  font-weight: 900;
+  text-decoration: none;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.nav-link.active {
+  background: var(--pink);
+  color: #16000f;
+  box-shadow: 0 14px 30px rgba(255, 63, 164, 0.22);
+}
+
+.nav-button {
+  margin-left: auto;
+  padding: 0 14px;
+  background: transparent;
+}
+
+.page-panel {
+  margin-top: 18px;
+  animation: viewIn 220ms ease both;
+}
+
+.page-panel.narrow {
+  width: min(520px, 100%);
+  margin-inline: auto;
+}
+
 .tab-button {
   border-radius: 6px;
   background: transparent;
@@ -154,6 +214,7 @@ h2 {
 }
 
 .tab-button:active,
+.nav-link:active,
 .primary-button:active,
 .ghost-button:active,
 .stepper button:active {
@@ -462,8 +523,26 @@ textarea:focus {
     min-height: 260px;
   }
 
+  .hero.compact {
+    min-height: 220px;
+  }
+
   .status-pill {
     align-self: flex-start;
+  }
+
+  .top-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(76px, 1fr));
+  }
+
+  .nav-link {
+    min-width: 0;
+    font-size: 0.92rem;
+  }
+
+  .nav-button {
+    margin-left: 0;
   }
 
   .section-header {

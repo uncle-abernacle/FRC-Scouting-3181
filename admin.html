@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050005" />
+    <meta name="description" content="Team 3181 scouting admin question builder." />
+    <title>Admin | 3181 Scouting</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero compact admin-gated hidden" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Team 3181</p>
+          <h1 id="app-title">Admin</h1>
+          <p class="hero-copy">Manage live scouting questions for every signed-in scout.</p>
+        </div>
+        <div class="status-pill" id="connectionStatus">Checking</div>
+      </section>
+
+      <nav class="top-nav" aria-label="App pages">
+        <a class="nav-link" href="scout.html">Scout</a>
+        <a class="nav-link admin-only hidden" href="data.html">Data</a>
+        <a class="nav-link admin-only hidden active" href="admin.html">Admin</a>
+        <button class="nav-link nav-button" id="signOutButton" type="button">Sign out</button>
+      </nav>
+
+      <section class="page-panel admin-gated hidden" aria-labelledby="admin-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Question builder</p>
+            <h2 id="admin-title">Edit form</h2>
+          </div>
+        </div>
+
+        <form id="questionForm" class="question-editor">
+          <input type="hidden" id="questionId" />
+          <label>
+            <span>Question label</span>
+            <input id="questionLabel" placeholder="Speaker notes scored" required />
+          </label>
+          <div class="form-grid">
+            <label>
+              <span>Type</span>
+              <select id="questionType" required>
+                <option value="counter">Counter</option>
+                <option value="number">Number</option>
+                <option value="select">Select</option>
+                <option value="toggle">Toggle</option>
+                <option value="text">Text</option>
+              </select>
+            </label>
+            <label>
+              <span>Phase</span>
+              <select id="questionPhase" required>
+                <option value="auto">Auto</option>
+                <option value="teleop">Teleop</option>
+                <option value="endgame">Endgame</option>
+                <option value="overall">Overall</option>
+              </select>
+            </label>
+            <label>
+              <span>Order</span>
+              <input id="questionOrder" type="number" inputmode="numeric" value="1" required />
+            </label>
+            <label>
+              <span>Required</span>
+              <select id="questionRequired">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>Options for select, comma separated</span>
+            <input id="questionOptions" placeholder="None, Parked, Onstage, Harmony" />
+          </label>
+          <div class="action-row">
+            <button class="primary-button" type="submit">Save question</button>
+            <button class="ghost-button" id="resetQuestionButton" type="button">New</button>
+            <p class="form-status" id="questionStatus" role="status"></p>
+          </div>
+        </form>
+
+        <div class="admin-list" id="adminQuestionList"></div>
+      </section>
+    </main>
+
+    <template id="emptyStateTemplate">
+      <div class="empty-state">
+        <strong>No items yet</strong>
+        <span>Once Firebase has data, it will appear here.</span>
+      </div>
+    </template>
+
+    <script type="module" src="src/admin.js"></script>
+  </body>
+</html>

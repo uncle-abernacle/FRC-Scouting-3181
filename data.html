@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050005" />
+    <meta name="description" content="Team 3181 scouting submissions." />
+    <title>Data | 3181 Scouting</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero compact admin-gated hidden" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Team 3181</p>
+          <h1 id="app-title">Data</h1>
+          <p class="hero-copy">Review recent submissions and export CSV when you need the full sheet.</p>
+        </div>
+        <div class="status-pill" id="connectionStatus">Checking</div>
+      </section>
+
+      <nav class="top-nav" aria-label="App pages">
+        <a class="nav-link" href="scout.html">Scout</a>
+        <a class="nav-link admin-only hidden active" href="data.html">Data</a>
+        <a class="nav-link admin-only hidden" href="admin.html">Admin</a>
+        <button class="nav-link nav-button" id="signOutButton" type="button">Sign out</button>
+      </nav>
+
+      <section class="page-panel admin-gated hidden" aria-labelledby="data-title">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Recent submissions</p>
+            <h2 id="data-title">Match data</h2>
+          </div>
+          <button class="ghost-button" id="exportButton" type="button">Export CSV</button>
+        </div>
+        <div class="submission-list" id="submissionList"></div>
+      </section>
+    </main>
+
+    <template id="emptyStateTemplate">
+      <div class="empty-state">
+        <strong>No items yet</strong>
+        <span>Once Firebase has data, it will appear here.</span>
+      </div>
+    </template>
+
+    <script type="module" src="src/data.js"></script>
+  </body>
+</html>

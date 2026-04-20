@@ -5,7 +5,7 @@
   "description": "Mobile-first Firebase scouting app for FRC Team 3181.",
   "scripts": {
     "start": "serve .",
-    "check": "node --check src/app.js",
+    "check": "node --check src/firebase.js && node --check src/auth.js && node --check src/login.js && node --check src/scout.js && node --check src/admin.js && node --check src/data.js && node --check src/questions.js && node --check src/ui.js",
     "deploy": "firebase deploy"
   },
   "devDependencies": {
