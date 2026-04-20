@@ -104,6 +104,13 @@ h2 {
   letter-spacing: 0;
 }
 
+h3 {
+  margin: 0 0 18px;
+  font-size: clamp(1.55rem, 6vw, 2.45rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 .hero-copy {
   max-width: 580px;
   margin-bottom: 0;
@@ -215,6 +222,7 @@ h2 {
 
 .tab-button:active,
 .nav-link:active,
+.progress-step:active,
 .primary-button:active,
 .ghost-button:active,
 .stepper button:active {
@@ -255,6 +263,48 @@ h2 {
 .question-editor {
   display: grid;
   gap: 16px;
+}
+
+.scout-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(5, 0, 5, 0.58);
+}
+
+.progress-step {
+  min-height: 44px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.progress-step.active {
+  background: var(--pink);
+  color: #16000f;
+}
+
+.progress-step.complete {
+  color: var(--good);
+}
+
+.scout-step {
+  display: none;
+  min-height: 420px;
+  animation: viewIn 220ms ease both;
+}
+
+.scout-step.active {
+  display: block;
 }
 
 .segmented-control {
@@ -590,6 +640,11 @@ textarea:focus {
   .top-nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(76px, 1fr));
+  }
+
+  .scout-progress {
+    grid-template-columns: repeat(5, minmax(58px, 1fr));
+    overflow-x: auto;
   }
 
   .nav-link {

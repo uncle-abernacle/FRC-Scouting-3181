@@ -27,7 +27,7 @@ function renderSubmissions() {
       <div class="item-topline">
         <div>
           <strong>Team ${escapeHtml(submission.team_number)} / Match ${escapeHtml(submission.match_number)}</strong>
-          <div class="meta">${escapeHtml(submission.event_code)} / ${escapeHtml(submission.alliance)} ${escapeHtml(submission.station)} / ${answered} answers</div>
+          <div class="meta">${escapeHtml(submission.event_code)} / ${escapeHtml(submission.alliance)} ${escapeHtml(submission.station)} / start ${escapeHtml(submission.starting_location || "unknown")} / ${answered} answers</div>
           <div class="meta">Scout: ${escapeHtml(submission.scout_name)} ${submission.scout_email ? `(${escapeHtml(submission.scout_email)})` : ""}</div>
         </div>
       </div>
@@ -44,7 +44,19 @@ function toCsvValue(value) {
 
 function exportCsv() {
   const rows = [
-    ["eventCode", "matchNumber", "teamNumber", "scoutName", "scoutEmail", "alliance", "station", "notes", "answers"],
+    [
+      "eventCode",
+      "matchNumber",
+      "teamNumber",
+      "scoutName",
+      "scoutEmail",
+      "alliance",
+      "station",
+      "startingLocation",
+      "preloadFuel",
+      "notes",
+      "answers",
+    ],
     ...state.submissions.map((submission) => [
       submission.event_code,
       submission.match_number,
@@ -53,6 +65,8 @@ function exportCsv() {
       submission.scout_email,
       submission.alliance,
       submission.station,
+      submission.starting_location,
+      submission.preload_fuel,
       submission.notes,
       submission.answers,
     ]),

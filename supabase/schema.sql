@@ -28,6 +28,8 @@ create table if not exists public.submissions (
   scout_uid uuid not null references auth.users(id) on delete cascade,
   alliance text not null,
   station text not null,
+  starting_location text,
+  preload_fuel text,
   notes text,
   answers jsonb not null default '{}',
   created_at timestamptz not null default now(),
@@ -37,6 +39,9 @@ create table if not exists public.submissions (
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
 alter table public.submissions enable row level security;
+
+alter table public.submissions add column if not exists starting_location text;
+alter table public.submissions add column if not exists preload_fuel text;
 
 create or replace function public.is_admin()
 returns boolean

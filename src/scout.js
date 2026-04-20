@@ -6,13 +6,21 @@ import { emptyState, setMessage, setStatus } from "./ui.js";
 const state = {
   questions: defaultQuestions,
   user: null,
+  currentStep: 0,
 };
+
+const steps = ["prematch", "auto", "teleop", "endgame", "review"];
 
 const els = {
   scoutForm: document.querySelector("#scoutForm"),
-  questionStack: document.querySelector("#questionStack"),
+  phaseStacks: document.querySelectorAll("[data-phase-stack]"),
+  stepPanels: document.querySelectorAll("[data-step]"),
+  progressSteps: document.querySelectorAll("[data-step-target]"),
   submitStatus: document.querySelector("#submitStatus"),
   clearDraftButton: document.querySelector("#clearDraftButton"),
+  prevStepButton: document.querySelector("#prevStepButton"),
+  nextStepButton: document.querySelector("#nextStepButton"),
+  submitButton: document.querySelector("#submitButton"),
 };
 
 function sortedQuestions() {
@@ -21,23 +29,37 @@ function sortedQuestions() {
 
 function renderQuestions() {
   const questions = sortedQuestions();
-  els.questionStack.innerHTML = "";
+  els.phaseStacks.forEach((stack) => {
+    stack.innerHTML = "";
+  });
 
   if (!questions.length) {
-    els.questionStack.append(emptyState("No questions configured", "Ask an admin to add scouting questions."));
+    els.phaseStacks.forEach((stack) => {
+      stack.append(emptyState("No questions configured", "Ask an admin to add scouting questions."));
+    });
     return;
   }
 
   questions.forEach((question) => {
+    const phase = question.phase || "overall";
+    const stack = document.querySelector(`[data-phase-stack="${CSS.escape(phase)}"]`);
+    if (!stack) return;
+
     const card = document.createElement("div");
     card.className = "question-card";
-    card.dataset.phase = question.phase || "overall";
+    card.dataset.phase = phase;
 
     const title = document.createElement("label");
     title.className = "question-title";
-    title.textContent = `${question.phase || "overall"} / ${question.label}`;
+    title.textContent = question.label;
     card.append(title, buildQuestionInput(question));
-    els.questionStack.append(card);
+    stack.append(card);
+  });
+
+  els.phaseStacks.forEach((stack) => {
+    if (!stack.children.length) {
+      stack.append(emptyState("No questions for this phase", "Admins can add questions for this part of the match."));
+    }
   });
 }
 
@@ -144,6 +166,7 @@ function getDraft() {
 function saveDraft() {
   const formData = new FormData(els.scoutForm);
   const draft = Object.fromEntries(formData.entries());
+  draft.__step = steps[state.currentStep];
   els.scoutForm.querySelectorAll("input[type='checkbox']").forEach((field) => {
     draft[field.name] = field.checked;
   });
@@ -153,6 +176,7 @@ function saveDraft() {
 function restoreDraft() {
   const draft = getDraft();
   Object.entries(draft).forEach(([key, value]) => {
+    if (key === "__step") return;
     const field = els.scoutForm.elements[key];
     if (!field) return;
 
@@ -167,16 +191,35 @@ function restoreDraft() {
       stepper.querySelector(".stepper-value").textContent = value;
     }
   });
+
+  if (draft.__step && steps.includes(draft.__step)) {
+    showStep(steps.indexOf(draft.__step));
+  }
 }
 
 function bindEvents() {
   els.scoutForm.addEventListener("input", saveDraft);
   els.scoutForm.addEventListener("change", saveDraft);
+  els.prevStepButton.addEventListener("click", () => showStep(state.currentStep - 1));
+  els.nextStepButton.addEventListener("click", () => {
+    if (validateCurrentStep()) {
+      showStep(state.currentStep + 1);
+    }
+  });
+  els.progressSteps.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetIndex = steps.indexOf(button.dataset.stepTarget);
+      if (targetIndex <= state.currentStep || validateCurrentStep()) {
+        showStep(targetIndex);
+      }
+    });
+  });
 
   els.clearDraftButton.addEventListener("click", () => {
     localStorage.removeItem("scoutDraft3181");
     els.scoutForm.reset();
     renderQuestions();
+    showStep(0);
     setMessage(els.submitStatus, "Draft cleared.");
   });
 
@@ -194,6 +237,8 @@ function bindEvents() {
       scout_uid: state.user.id,
       alliance: formData.get("alliance"),
       station: formData.get("station"),
+      starting_location: formData.get("startingLocation"),
+      preload_fuel: formData.get("preloadFuel"),
       notes: formData.get("notes"),
       answers: collectAnswers(formData),
       device_created_at: new Date().toISOString(),
@@ -208,8 +253,37 @@ function bindEvents() {
     localStorage.removeItem("scoutDraft3181");
     els.scoutForm.reset();
     renderQuestions();
+    showStep(0);
     setMessage(els.submitStatus, "Submitted. Nice work.");
   });
+}
+
+function showStep(index) {
+  state.currentStep = Math.min(Math.max(index, 0), steps.length - 1);
+  const current = steps[state.currentStep];
+
+  els.stepPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.step === current);
+  });
+  els.progressSteps.forEach((button, buttonIndex) => {
+    button.classList.toggle("active", button.dataset.stepTarget === current);
+    button.classList.toggle("complete", buttonIndex < state.currentStep);
+  });
+
+  els.prevStepButton.classList.toggle("hidden", state.currentStep === 0);
+  els.nextStepButton.classList.toggle("hidden", state.currentStep === steps.length - 1);
+  els.submitButton.classList.toggle("hidden", state.currentStep !== steps.length - 1);
+  setMessage(els.submitStatus, "");
+  saveDraft();
+}
+
+function validateCurrentStep() {
+  const panel = els.stepPanels[state.currentStep];
+  const invalid = panel.querySelector("input:invalid, select:invalid, textarea:invalid");
+  if (!invalid) return true;
+
+  invalid.reportValidity();
+  return false;
 }
 
 async function loadQuestions() {
@@ -256,11 +330,13 @@ if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
   setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
   renderQuestions();
+  showStep(0);
 } else {
   state.user = await setupAuthedPage();
   if (state.user) {
     bindEvents();
     renderQuestions();
+    showStep(0);
     await loadQuestions();
     subscribeToQuestions();
   }
