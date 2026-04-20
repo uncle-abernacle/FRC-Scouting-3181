@@ -63,12 +63,18 @@ export function revealAdminLinks() {
   document.querySelectorAll(".admin-gated").forEach((element) => element.classList.remove("hidden"));
 }
 
-function wireSignOut() {
+export function wireSignOut() {
   const button = document.querySelector("#signOutButton");
   if (!button || button.dataset.bound) return;
 
   button.dataset.bound = "true";
-  button.addEventListener("click", async () => {
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    await signOutAndRedirect();
+  });
+}
+
+export async function signOutAndRedirect() {
     try {
       if (supabase) {
         await supabase.auth.signOut();
@@ -79,5 +85,6 @@ function wireSignOut() {
       localStorage.removeItem("scoutDraft3181");
       window.location.href = "index.html";
     }
-  });
 }
+
+wireSignOut();
