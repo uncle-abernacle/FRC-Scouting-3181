@@ -1,20 +1,26 @@
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-import { auth, db } from "./firebase.js";
+import { supabase } from "./supabase.js";
 
-export function authState() {
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-  });
+export async function authState() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user || null;
 }
 
 export async function getAdminStatus(user) {
-  if (!user?.email) return false;
-  const adminDoc = await getDoc(doc(db, "adminEmails", user.email));
-  return adminDoc.exists();
+  if (!user) return false;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.warn(error);
+    return false;
+  }
+
+  return Boolean(data?.is_admin);
 }
 
 export async function requireUser() {
@@ -63,7 +69,7 @@ function wireSignOut() {
 
   button.dataset.bound = "true";
   button.addEventListener("click", async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     window.location.replace("index.html");
   });
 }

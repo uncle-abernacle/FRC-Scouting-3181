@@ -1,9 +1,4 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  updateProfile,
-} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-import { auth } from "./firebase.js";
+import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { authState, getAdminStatus } from "./auth.js";
 import { setMessage, setStatus } from "./ui.js";
 
@@ -18,7 +13,7 @@ const passwordInput = document.querySelector("#password");
 
 let mode = "signin";
 
-setStatus("Ready", "online");
+setStatus(isSupabaseConfigured ? "Ready" : "Needs config", isSupabaseConfigured ? "online" : "offline");
 
 authState().then(async (user) => {
   if (!user) return;
@@ -30,6 +25,12 @@ signUpMode.addEventListener("click", () => setMode("signup"));
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  if (!isSupabaseConfigured) {
+    setMessage(status, "Add your Supabase URL and anon key in src/supabase.js first.", true);
+    return;
+  }
+
   setMessage(status, mode === "signin" ? "Signing in..." : "Creating account...");
 
   const username = normalizeUsername(usernameInput.value);
@@ -42,11 +43,8 @@ form.addEventListener("submit", async (event) => {
   }
 
   try {
-    const credential =
-      mode === "signup"
-        ? await createAccount(username, email, password)
-        : await signInWithEmailAndPassword(auth, email, password);
-    const isAdmin = await getAdminStatus(credential.user);
+    const user = mode === "signup" ? await createAccount(username, email, password) : await signIn(username, email, password);
+    const isAdmin = await getAdminStatus(user);
     window.location.replace(isAdmin ? "admin.html" : "scout.html");
   } catch (error) {
     setMessage(status, friendlyAuthError(error), true);
@@ -65,9 +63,62 @@ function setMode(nextMode) {
 }
 
 async function createAccount(username, email, password) {
-  const credential = await createUserWithEmailAndPassword(auth, email, password);
-  await updateProfile(credential.user, { displayName: username });
-  return credential;
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { username },
+    },
+  });
+
+  if (error) throw error;
+
+  if (!data.session) {
+    throw new Error("Turn off Supabase email confirmation, then try signing up again.");
+  }
+
+  const user = data.user;
+  if (!user) {
+    throw new Error("Check your email confirmation setting, then sign in.");
+  }
+
+  const { error: profileError } = await supabase.from("profiles").insert({
+    id: user.id,
+    username,
+    is_admin: false,
+  });
+
+  if (profileError && profileError.code !== "23505") {
+    throw profileError;
+  }
+
+  return user;
+}
+
+async function signIn(username, email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+
+  if (!data.user) {
+    throw new Error("That username or password is wrong.");
+  }
+
+  await ensureProfile(data.user, username);
+  return data.user;
+}
+
+async function ensureProfile(user, username) {
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      username,
+    },
+    { onConflict: "id", ignoreDuplicates: true },
+  );
+
+  if (error) {
+    console.warn(error);
+  }
 }
 
 function normalizeUsername(value) {
@@ -76,19 +127,16 @@ function normalizeUsername(value) {
 }
 
 function usernameToEmail(username) {
-  return `${username}@3181.scout.local`;
+  return `${username}@3181scouting.app`;
 }
 
 function friendlyAuthError(error) {
   const messages = {
-    "auth/email-already-in-use": "That username is already taken.",
-    "auth/invalid-credential": "That username or password is wrong.",
-    "auth/invalid-email": "Use a username with letters, numbers, underscores, or dashes.",
-    "auth/missing-password": "Enter a password.",
-    "auth/weak-password": "Use a password with at least 6 characters.",
-    "auth/user-disabled": "That account is disabled.",
-    "auth/user-not-found": "That username does not exist yet.",
-    "auth/wrong-password": "That username or password is wrong.",
+    email_address_invalid: "Use a username with letters, numbers, underscores, or dashes.",
+    email_exists: "That username is already taken.",
+    invalid_credentials: "That username or password is wrong.",
+    user_already_exists: "That username is already taken.",
+    weak_password: "Use a stronger password.",
   };
 
   return messages[error.code] || error.message;

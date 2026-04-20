@@ -5,65 +5,58 @@ Mobile-first scouting app for FRC Team 3181. Scouts create username/password acc
 ## What is included
 
 - Pink and black 3181 UI built for phones first
-- Firebase Web SDK setup using your `frc-scouting-3181` project
+- Supabase Auth with username/password UI
 - Multi-page app: login, scout, admin, and data pages
-- Firebase Auth required before scouting, with username/password UI
-- Admin pages hidden unless the signed-in email is marked as an admin
-- Dynamic questions stored in Cloud Firestore
+- Admin pages hidden unless `profiles.is_admin` is true
+- Dynamic questions stored in Supabase Postgres
 - Question editor for counter, number, select, toggle, and text questions
 - Recent submission viewer and CSV export
 - Local draft saving so accidental refreshes do not wipe a scout's form
-- Firestore security rules for signed-in submissions and admin-only data access
+- Row Level Security policies for signed-in submissions and admin-only data access
 
-## Firebase setup
+## Supabase setup
 
-1. In Firebase Console, enable **Authentication** and turn on **Email/Password** sign-in.
-2. Scouts can create their own accounts from the login page.
-3. Enable **Cloud Firestore**.
-4. Publish the rules in `firestore.rules`.
-5. Mark admin accounts in Firestore.
-6. Optional but recommended: deploy with Firebase Hosting.
+1. Create a Supabase project.
+2. In Authentication, keep Email provider enabled.
+3. For easiest username-only scouting, turn off email confirmation in Auth settings.
+4. Open the SQL Editor and run `supabase/schema.sql`.
+5. Copy your project URL and anon public key into `src/supabase.js`.
+6. Start the app with `npm start`.
+
+The app turns usernames into fake Supabase Auth emails using this format:
+
+```text
+username@3181scouting.app
+```
 
 ## Marking an admin
 
-Create a Firestore collection named `adminEmails`.
+After the user signs up once, open the Supabase Table Editor for `profiles` and set `is_admin` to `true` for that username.
 
-The app turns usernames into fake Firebase emails using this format:
+You can also run SQL:
 
-```text
-username@3181.scout.local
+```sql
+update public.profiles
+set is_admin = true
+where username = 'leadscout';
 ```
 
-For each admin account, add a document whose document ID is that generated fake email.
+Only admin users can see the Admin and Data links. RLS also blocks non-admin accounts from editing questions or reading submissions.
 
-Example:
+## Tables
 
-- Collection: `adminEmails`
-- Document ID: `leadscout@3181.scout.local`
-- Fields can be anything, such as `role: admin`
-
-Only signed-in users whose email has a matching document can see the Admin and Data links. Firestore rules also block non-admin accounts from editing questions or reading submissions.
-
-```powershell
-npm install -g firebase-tools
-firebase login
-firebase deploy
-```
-
-The app uses these collections:
-
+- `profiles`: scout profile and admin flag
 - `questions`: admin-managed scouting questions
 - `submissions`: scout form submissions
-- `adminEmails`: admin allowlist, keyed by exact email address
 
-If there are no Firestore questions yet, the app shows starter questions locally so you can test the flow immediately.
+If there are no Supabase questions yet, the app shows starter questions locally so you can test the flow immediately.
 
 ## Local testing
 
 Because the app uses JavaScript modules, serve it from a local web server:
 
 ```powershell
-npx serve .
+npm start
 ```
 
 Then open the local URL on your computer or phone.

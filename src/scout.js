@@ -1,12 +1,4 @@
-import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-import { db } from "./firebase.js";
+import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { setupAuthedPage } from "./auth.js";
 import { defaultQuestions, sortQuestions } from "./questions.js";
 import { emptyState, setMessage, setStatus } from "./ui.js";
@@ -194,56 +186,82 @@ function bindEvents() {
 
     const formData = new FormData(els.scoutForm);
     const submission = {
-      eventCode: formData.get("eventCode"),
-      matchNumber: formData.get("matchNumber"),
-      teamNumber: formData.get("teamNumber"),
-      scoutName: formData.get("scoutName"),
-      scoutEmail: state.user.email,
-      scoutUid: state.user.uid,
+      event_code: formData.get("eventCode"),
+      match_number: formData.get("matchNumber"),
+      team_number: formData.get("teamNumber"),
+      scout_name: formData.get("scoutName"),
+      scout_email: state.user.email,
+      scout_uid: state.user.id,
       alliance: formData.get("alliance"),
       station: formData.get("station"),
       notes: formData.get("notes"),
       answers: collectAnswers(formData),
-      createdAt: serverTimestamp(),
-      deviceCreatedAt: new Date().toISOString(),
+      device_created_at: new Date().toISOString(),
     };
 
-    try {
-      await addDoc(collection(db, "submissions"), submission);
-      localStorage.removeItem("scoutDraft3181");
-      els.scoutForm.reset();
-      renderQuestions();
-      setMessage(els.submitStatus, "Submitted. Nice work.");
-    } catch (error) {
+    const { error } = await supabase.from("submissions").insert(submission);
+    if (error) {
       setMessage(els.submitStatus, `Could not submit: ${error.message}`, true);
+      return;
     }
+
+    localStorage.removeItem("scoutDraft3181");
+    els.scoutForm.reset();
+    renderQuestions();
+    setMessage(els.submitStatus, "Submitted. Nice work.");
   });
 }
 
-function subscribeToQuestions() {
+async function loadQuestions() {
   setStatus("Syncing", "");
-  onSnapshot(
-    query(collection(db, "questions"), orderBy("order", "asc")),
-    (snapshot) => {
-      if (!snapshot.empty) {
-        state.questions = snapshot.docs.map((questionDoc) => ({ id: questionDoc.id, ...questionDoc.data() }));
-      }
-      renderQuestions();
-      restoreDraft();
-      setStatus("Online", "online");
-    },
-    (error) => {
-      console.warn(error);
-      renderQuestions();
-      restoreDraft();
-      setStatus("Offline rules", "offline");
-    },
-  );
+  const { data, error } = await supabase.from("questions").select("*").order("question_order", { ascending: true });
+
+  if (error) {
+    console.warn(error);
+    renderQuestions();
+    restoreDraft();
+    setStatus("Offline rules", "offline");
+    return;
+  }
+
+  if (data?.length) {
+    state.questions = data.map(fromQuestionRow);
+  }
+
+  renderQuestions();
+  restoreDraft();
+  setStatus("Online", "online");
 }
 
-state.user = await setupAuthedPage();
-if (state.user) {
-  bindEvents();
+function subscribeToQuestions() {
+  supabase
+    .channel("questions-scout")
+    .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, loadQuestions)
+    .subscribe();
+}
+
+function fromQuestionRow(row) {
+  return {
+    id: row.id,
+    label: row.label,
+    type: row.type,
+    phase: row.phase,
+    order: row.question_order,
+    required: row.required,
+    options: row.options || [],
+  };
+}
+
+if (!isSupabaseConfigured) {
+  setStatus("Needs config", "offline");
+  setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
   renderQuestions();
-  subscribeToQuestions();
+} else {
+  state.user = await setupAuthedPage();
+  if (state.user) {
+    bindEvents();
+    renderQuestions();
+    await loadQuestions();
+    subscribeToQuestions();
+  }
 }

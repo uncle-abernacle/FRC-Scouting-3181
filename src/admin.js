@@ -1,14 +1,4 @@
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-import { db } from "./firebase.js";
+import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { requireAdmin } from "./auth.js";
 import { defaultQuestions, sortQuestions } from "./questions.js";
 import { emptyState, escapeHtml, setMessage, setStatus } from "./ui.js";
@@ -105,25 +95,28 @@ function bindEvents() {
     const label = els.questionLabel.value.trim();
     const id = els.questionId.value || slugify(label);
     const question = {
+      id,
       label,
       type: els.questionType.value,
       phase: els.questionPhase.value,
-      order: Number(els.questionOrder.value || 0),
+      question_order: Number(els.questionOrder.value || 0),
       required: els.questionRequired.value === "true",
       options: els.questionOptions.value
         .split(",")
         .map((option) => option.trim())
         .filter(Boolean),
-      updatedAt: serverTimestamp(),
+      updated_at: new Date().toISOString(),
     };
 
-    try {
-      await setDoc(doc(db, "questions", id), question, { merge: true });
-      resetQuestionEditor();
-      setMessage(els.questionStatus, "Question saved.");
-    } catch (error) {
+    const { error } = await supabase.from("questions").upsert(question);
+    if (error) {
       setMessage(els.questionStatus, error.message, true);
+      return;
     }
+
+    resetQuestionEditor();
+    setMessage(els.questionStatus, "Question saved.");
+    await loadQuestions();
   });
 
   els.adminQuestionList.addEventListener("click", async (event) => {
@@ -133,33 +126,58 @@ function bindEvents() {
       editQuestion(editId);
     }
     if (deleteId && confirm("Delete this question?")) {
-      await deleteDoc(doc(db, "questions", deleteId));
+      const { error } = await supabase.from("questions").delete().eq("id", deleteId);
+      if (error) {
+        setMessage(els.questionStatus, error.message, true);
+      }
     }
   });
 }
 
-function subscribeToQuestions() {
+async function loadQuestions() {
   setStatus("Syncing", "");
-  onSnapshot(
-    query(collection(db, "questions"), orderBy("order", "asc")),
-    (snapshot) => {
-      if (!snapshot.empty) {
-        state.questions = snapshot.docs.map((questionDoc) => ({ id: questionDoc.id, ...questionDoc.data() }));
-      }
-      renderAdminQuestions();
-      setStatus("Online", "online");
-    },
-    (error) => {
-      console.warn(error);
-      renderAdminQuestions();
-      setStatus("Admin blocked", "offline");
-    },
-  );
+  const { data, error } = await supabase.from("questions").select("*").order("question_order", { ascending: true });
+
+  if (error) {
+    console.warn(error);
+    renderAdminQuestions();
+    setStatus("Admin blocked", "offline");
+    return;
+  }
+
+  if (data?.length) {
+    state.questions = data.map(fromQuestionRow);
+  }
+
+  renderAdminQuestions();
+  setStatus("Online", "online");
 }
 
-if (await requireAdmin()) {
+function subscribeToQuestions() {
+  supabase
+    .channel("questions-admin")
+    .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, loadQuestions)
+    .subscribe();
+}
+
+function fromQuestionRow(row) {
+  return {
+    id: row.id,
+    label: row.label,
+    type: row.type,
+    phase: row.phase,
+    order: row.question_order,
+    required: row.required,
+    options: row.options || [],
+  };
+}
+
+if (!isSupabaseConfigured) {
+  setStatus("Needs config", "offline");
+} else if (await requireAdmin()) {
   bindEvents();
   resetQuestionEditor();
   renderAdminQuestions();
+  await loadQuestions();
   subscribeToQuestions();
 }

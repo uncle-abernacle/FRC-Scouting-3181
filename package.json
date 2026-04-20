@@ -2,14 +2,12 @@
   "name": "frc-scouting-3181",
   "version": "1.0.0",
   "private": true,
-  "description": "Mobile-first Firebase scouting app for FRC Team 3181.",
+  "description": "Mobile-first Supabase scouting app for FRC Team 3181.",
   "scripts": {
     "start": "serve .",
-    "check": "node --check src/firebase.js && node --check src/auth.js && node --check src/login.js && node --check src/scout.js && node --check src/admin.js && node --check src/data.js && node --check src/questions.js && node --check src/ui.js",
-    "deploy": "firebase deploy"
+    "check": "node --check src/supabase.js && node --check src/auth.js && node --check src/login.js && node --check src/scout.js && node --check src/admin.js && node --check src/data.js && node --check src/questions.js && node --check src/ui.js"
   },
   "devDependencies": {
-    "firebase-tools": "^15.15.0",
     "serve": "^14.2.5"
   }
 }

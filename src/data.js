@@ -1,11 +1,4 @@
-import {
-  collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-import { db } from "./firebase.js";
+import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { requireAdmin } from "./auth.js";
 import { emptyState, escapeHtml, setStatus } from "./ui.js";
 
@@ -33,9 +26,9 @@ function renderSubmissions() {
     item.innerHTML = `
       <div class="item-topline">
         <div>
-          <strong>Team ${escapeHtml(submission.teamNumber)} / Match ${escapeHtml(submission.matchNumber)}</strong>
-          <div class="meta">${escapeHtml(submission.eventCode)} / ${escapeHtml(submission.alliance)} ${escapeHtml(submission.station)} / ${answered} answers</div>
-          <div class="meta">Scout: ${escapeHtml(submission.scoutName)} ${submission.scoutEmail ? `(${escapeHtml(submission.scoutEmail)})` : ""}</div>
+          <strong>Team ${escapeHtml(submission.team_number)} / Match ${escapeHtml(submission.match_number)}</strong>
+          <div class="meta">${escapeHtml(submission.event_code)} / ${escapeHtml(submission.alliance)} ${escapeHtml(submission.station)} / ${answered} answers</div>
+          <div class="meta">Scout: ${escapeHtml(submission.scout_name)} ${submission.scout_email ? `(${escapeHtml(submission.scout_email)})` : ""}</div>
         </div>
       </div>
       <p class="meta">${escapeHtml(submission.notes || "No notes")}</p>
@@ -53,11 +46,11 @@ function exportCsv() {
   const rows = [
     ["eventCode", "matchNumber", "teamNumber", "scoutName", "scoutEmail", "alliance", "station", "notes", "answers"],
     ...state.submissions.map((submission) => [
-      submission.eventCode,
-      submission.matchNumber,
-      submission.teamNumber,
-      submission.scoutName,
-      submission.scoutEmail,
+      submission.event_code,
+      submission.match_number,
+      submission.team_number,
+      submission.scout_name,
+      submission.scout_email,
       submission.alliance,
       submission.station,
       submission.notes,
@@ -74,25 +67,38 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-function subscribeToSubmissions() {
+async function loadSubmissions() {
   setStatus("Syncing", "");
-  onSnapshot(
-    query(collection(db, "submissions"), orderBy("createdAt", "desc"), limit(60)),
-    (snapshot) => {
-      state.submissions = snapshot.docs.map((submissionDoc) => ({ id: submissionDoc.id, ...submissionDoc.data() }));
-      renderSubmissions();
-      setStatus("Online", "online");
-    },
-    (error) => {
-      console.warn(error);
-      renderSubmissions();
-      setStatus("Admin blocked", "offline");
-    },
-  );
+  const { data, error } = await supabase
+    .from("submissions")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  if (error) {
+    console.warn(error);
+    renderSubmissions();
+    setStatus("Admin blocked", "offline");
+    return;
+  }
+
+  state.submissions = data || [];
+  renderSubmissions();
+  setStatus("Online", "online");
 }
 
-if (await requireAdmin()) {
+function subscribeToSubmissions() {
+  supabase
+    .channel("submissions-data")
+    .on("postgres_changes", { event: "*", schema: "public", table: "submissions" }, loadSubmissions)
+    .subscribe();
+}
+
+if (!isSupabaseConfigured) {
+  setStatus("Needs config", "offline");
+} else if (await requireAdmin()) {
   els.exportButton.addEventListener("click", exportCsv);
   renderSubmissions();
+  await loadSubmissions();
   subscribeToSubmissions();
 }
