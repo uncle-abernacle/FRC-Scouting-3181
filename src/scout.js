@@ -136,6 +136,7 @@ function buildQuestionInput(question) {
     value.type = "hidden";
     value.name = name;
     value.value = "0";
+    value.dataset.required = String(required);
     visual.className = "stepper-value";
     visual.textContent = "0";
 
@@ -162,6 +163,7 @@ function buildQuestionInput(question) {
     label.className = "toggle-field";
     input.type = "checkbox";
     input.name = name;
+    input.required = required;
     track.className = "toggle-track";
     label.append(input, track);
     return label;
@@ -279,6 +281,9 @@ function bindEvents() {
 
   els.scoutForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!validateAllSteps()) {
+      return;
+    }
     setMessage(els.submitStatus, "Submitting...");
 
     const formData = new FormData(els.scoutForm);
@@ -333,11 +338,45 @@ function showStep(index) {
 
 function validateCurrentStep() {
   const panel = els.stepPanels[state.currentStep];
-  const invalid = panel.querySelector("input:invalid, select:invalid, textarea:invalid");
+  if (validatePanel(panel)) return true;
+
+  return false;
+}
+
+function validateAllSteps() {
+  for (let index = 0; index < els.stepPanels.length; index += 1) {
+    const panel = els.stepPanels[index];
+    if (findRequiredProblem(panel)) {
+      showStep(index);
+      validatePanel(panel);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function validatePanel(panel) {
+  const { emptyCounter, invalid } = findRequiredProblem(panel);
+  if (emptyCounter) {
+    const title = emptyCounter.closest(".question-card")?.querySelector(".question-title")?.textContent || "This required counter";
+    setMessage(els.submitStatus, `${title} is required. Add at least 1.`, true);
+    emptyCounter.closest(".question-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return false;
+  }
+
   if (!invalid) return true;
 
   invalid.reportValidity();
+  setMessage(els.submitStatus, "Finish the required question before continuing.", true);
   return false;
+}
+
+function findRequiredProblem(panel) {
+  return {
+    emptyCounter: panel.querySelector("input[type='hidden'][data-required='true'][value='0']"),
+    invalid: panel.querySelector("input:invalid, select:invalid, textarea:invalid"),
+  };
 }
 
 async function loadQuestions() {
