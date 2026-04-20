@@ -15,7 +15,7 @@
         <div>
           <p class="eyebrow">Team 3181</p>
           <h1 id="app-title">Scouting Login</h1>
-          <p class="hero-copy">Sign in with the account your scouting lead made for you.</p>
+          <p class="hero-copy">Sign in or make a scouting account with just a username and password.</p>
         </div>
         <div class="status-pill" id="connectionStatus">Ready</div>
       </section>
@@ -23,21 +23,26 @@
       <section class="page-panel narrow" aria-labelledby="login-title">
         <div class="section-header">
           <div>
-            <p class="eyebrow">Firebase account</p>
+            <p class="eyebrow">Scout account</p>
             <h2 id="login-title">Sign in</h2>
           </div>
         </div>
 
+        <div class="segmented-control" role="tablist" aria-label="Login mode">
+          <button class="segment active" id="signInMode" type="button">Sign in</button>
+          <button class="segment" id="signUpMode" type="button">Sign up</button>
+        </div>
+
         <form class="auth-panel" id="loginForm">
           <label>
-            <span>Email</span>
-            <input id="email" type="email" autocomplete="email" required />
+            <span>Username</span>
+            <input id="username" autocomplete="username" inputmode="text" pattern="[A-Za-z0-9_-]{3,24}" required />
           </label>
           <label>
             <span>Password</span>
             <input id="password" type="password" autocomplete="current-password" required />
           </label>
-          <button class="primary-button" type="submit">Enter app</button>
+          <button class="primary-button" id="authButton" type="submit">Enter app</button>
           <p class="form-status" id="authStatus" role="status"></p>
         </form>
       </section>

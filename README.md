@@ -1,13 +1,13 @@
 # 3181 FRC Scouting
 
-Mobile-first scouting app for FRC Team 3181. Scouts sign in with Firebase accounts, submit match data from phones, and admin-marked accounts can change the questions that appear in the scouting form.
+Mobile-first scouting app for FRC Team 3181. Scouts create username/password accounts, submit match data from phones, and admin-marked accounts can change the questions that appear in the scouting form.
 
 ## What is included
 
 - Pink and black 3181 UI built for phones first
 - Firebase Web SDK setup using your `frc-scouting-3181` project
 - Multi-page app: login, scout, admin, and data pages
-- Firebase Auth required before scouting
+- Firebase Auth required before scouting, with username/password UI
 - Admin pages hidden unless the signed-in email is marked as an admin
 - Dynamic questions stored in Cloud Firestore
 - Question editor for counter, number, select, toggle, and text questions
@@ -18,7 +18,7 @@ Mobile-first scouting app for FRC Team 3181. Scouts sign in with Firebase accoun
 ## Firebase setup
 
 1. In Firebase Console, enable **Authentication** and turn on **Email/Password** sign-in.
-2. Create accounts for your scouts in Firebase Authentication.
+2. Scouts can create their own accounts from the login page.
 3. Enable **Cloud Firestore**.
 4. Publish the rules in `firestore.rules`.
 5. Mark admin accounts in Firestore.
@@ -28,12 +28,18 @@ Mobile-first scouting app for FRC Team 3181. Scouts sign in with Firebase accoun
 
 Create a Firestore collection named `adminEmails`.
 
-For each admin account, add a document whose document ID is the exact email address of that Firebase Auth user.
+The app turns usernames into fake Firebase emails using this format:
+
+```text
+username@3181.scout.local
+```
+
+For each admin account, add a document whose document ID is that generated fake email.
 
 Example:
 
 - Collection: `adminEmails`
-- Document ID: `leadscout@example.com`
+- Document ID: `leadscout@3181.scout.local`
 - Fields can be anything, such as `role: admin`
 
 Only signed-in users whose email has a matching document can see the Admin and Data links. Firestore rules also block non-admin accounts from editing questions or reading submissions.
