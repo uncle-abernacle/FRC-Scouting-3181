@@ -581,23 +581,14 @@ textarea:focus {
 }
 
 .submission-item {
-  cursor: pointer;
   transition:
     border-color 160ms ease,
-    transform 160ms ease,
     background 160ms ease;
 }
 
-.submission-item:hover,
-.submission-item:focus,
 .submission-item.active {
   border-color: var(--pink);
   background: linear-gradient(180deg, rgba(49, 17, 43, 0.98), rgba(21, 7, 19, 0.98));
-}
-
-.submission-item:focus {
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(255, 63, 164, 0.16);
 }
 
 .detail-panel {

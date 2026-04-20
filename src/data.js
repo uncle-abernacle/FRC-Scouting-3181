@@ -24,17 +24,14 @@ function renderSubmissions() {
     renderDetail(null);
     return;
   }
-
-  if (!state.selectedId || !state.submissions.some((submission) => submission.id === state.selectedId)) {
-    state.selectedId = state.submissions[0].id;
+  if (state.selectedId && !state.submissions.some((submission) => submission.id === state.selectedId)) {
+    state.selectedId = null;
   }
 
   state.submissions.forEach((submission) => {
     const item = document.createElement("article");
     item.className = "submission-item";
     item.dataset.submissionId = submission.id;
-    item.tabIndex = 0;
-    item.setAttribute("role", "button");
     item.classList.toggle("active", submission.id === state.selectedId);
     const answered = Object.keys(submission.answers || {}).length;
     item.innerHTML = `
@@ -60,10 +57,11 @@ function renderDetail(submission) {
   els.submissionDetail.innerHTML = "";
 
   if (!submission) {
-    els.submissionDetail.append(emptyState("Select a submission", "Click a match on the left to see every answer."));
+    els.submissionDetail.classList.add("hidden");
     return;
   }
 
+  els.submissionDetail.classList.remove("hidden");
   const answers = Object.entries(submission.answers || {});
   const detail = document.createElement("article");
   detail.className = "submission-detail-card";
@@ -228,7 +226,7 @@ if (!isSupabaseConfigured) {
   els.exportButton.addEventListener("click", exportCsv);
   els.submissionList.addEventListener("click", (event) => {
     const deleteId = event.target.dataset.delete;
-    const openId = event.target.dataset.open || event.target.closest("[data-submission-id]")?.dataset.submissionId;
+    const openId = event.target.dataset.open;
 
     if (deleteId) {
       event.stopPropagation();
@@ -240,14 +238,6 @@ if (!isSupabaseConfigured) {
       state.selectedId = openId;
       renderSubmissions();
     }
-  });
-  els.submissionList.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const id = event.target.closest("[data-submission-id]")?.dataset.submissionId;
-    if (!id) return;
-    event.preventDefault();
-    state.selectedId = id;
-    renderSubmissions();
   });
   els.submissionDetail.addEventListener("click", (event) => {
     const deleteId = event.target.dataset.delete;
