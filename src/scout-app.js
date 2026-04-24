@@ -302,6 +302,7 @@ function restoreDraft() {
 }
 
 function bindEvents() {
+  window.__scoutSubmitAttached = true;
   els.scoutForm.addEventListener("input", saveDraft);
   els.scoutForm.addEventListener("change", saveDraft);
   els.prevStepButton.addEventListener("click", () => showStep(state.currentStep - 1));
@@ -331,7 +332,7 @@ function bindEvents() {
     setMessage(els.submitStatus, "Draft cleared.");
   });
 
-  els.scoutForm.addEventListener("submit", async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (state.isSubmitting) return;
     if (!validateAllSteps()) {
@@ -390,7 +391,10 @@ function bindEvents() {
     } finally {
       setSubmitting(false);
     }
-  });
+  };
+
+  els.scoutForm.addEventListener("submit", handleSubmit);
+  els.submitButton.addEventListener("click", handleSubmit);
 }
 
 function showStep(index, shouldSave = true) {

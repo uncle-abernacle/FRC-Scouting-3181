@@ -129,7 +129,7 @@
           <div class="action-row">
             <button class="ghost-button" id="prevStepButton" type="button">Back</button>
             <button class="primary-button" id="nextStepButton" type="button">Next</button>
-            <button class="primary-button hidden" id="submitButton" type="submit">Submit scouting</button>
+            <button class="primary-button hidden" id="submitButton" type="button">Submit scouting</button>
             <p class="form-status" id="submitStatus" role="status"></p>
           </div>
         </form>
@@ -145,17 +145,22 @@
 
     <script>
       window.__scoutBundleReady = false;
+      window.__scoutSubmitAttached = false;
       (() => {
         const form = document.querySelector("#scoutForm");
         const status = document.querySelector("#submitStatus");
+        const submitButton = document.querySelector("#submitButton");
         if (!form || !status) return;
 
-        form.addEventListener("submit", (event) => {
-          if (window.__scoutBundleReady) return;
+        const warnIfNotReady = (event) => {
+          if (window.__scoutBundleReady && window.__scoutSubmitAttached) return;
           event.preventDefault();
           status.textContent = "App is still loading. Wait a second, then try again.";
           status.style.color = "var(--danger)";
-        });
+        };
+
+        form.addEventListener("submit", warnIfNotReady);
+        submitButton?.addEventListener("click", warnIfNotReady);
       })();
     </script>
     <script type="module" src="src/scout-app.js?v=mobile-safe-submit-20260423"></script>
