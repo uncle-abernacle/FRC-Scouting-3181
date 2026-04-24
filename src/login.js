@@ -60,7 +60,7 @@ function setMode(nextMode) {
   authButton.textContent = isSignup ? "Make account" : "Enter app";
   signInMode.classList.toggle("active", !isSignup);
   signUpMode.classList.toggle("active", isSignup);
-  usernameInput.placeholder = isSignup ? "first name and last name initial" : "";
+  usernameInput.placeholder = "";
   usernameFormatNote.classList.toggle("hidden", !isSignup);
   passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
   setMessage(status, "");
