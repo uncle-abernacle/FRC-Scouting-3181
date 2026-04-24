@@ -226,33 +226,44 @@ function bindRefreshEvents() {
   });
 }
 
+async function initDataPage() {
+  try {
+    if (!(await requireAdmin())) return;
+
+    els.exportButton.addEventListener("click", exportCsv);
+    els.submissionList.addEventListener("click", (event) => {
+      const deleteId = event.target.dataset.delete;
+      const openId = event.target.dataset.open;
+
+      if (deleteId) {
+        event.stopPropagation();
+        deleteSubmission(deleteId);
+        return;
+      }
+
+      if (openId) {
+        state.selectedId = openId;
+        renderSubmissions();
+      }
+    });
+    els.submissionDetail.addEventListener("click", (event) => {
+      const deleteId = event.target.dataset.delete;
+      if (deleteId) {
+        deleteSubmission(deleteId);
+      }
+    });
+    renderSubmissions();
+    await loadSubmissions();
+    bindRefreshEvents();
+    subscribeToSubmissions();
+  } catch (error) {
+    console.error(error);
+    setStatus("Load error", "offline");
+  }
+}
+
 if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
-} else if (await requireAdmin()) {
-  els.exportButton.addEventListener("click", exportCsv);
-  els.submissionList.addEventListener("click", (event) => {
-    const deleteId = event.target.dataset.delete;
-    const openId = event.target.dataset.open;
-
-    if (deleteId) {
-      event.stopPropagation();
-      deleteSubmission(deleteId);
-      return;
-    }
-
-    if (openId) {
-      state.selectedId = openId;
-      renderSubmissions();
-    }
-  });
-  els.submissionDetail.addEventListener("click", (event) => {
-    const deleteId = event.target.dataset.delete;
-    if (deleteId) {
-      deleteSubmission(deleteId);
-    }
-  });
-  renderSubmissions();
-  await loadSubmissions();
-  bindRefreshEvents();
-  subscribeToSubmissions();
+} else {
+  void initDataPage();
 }

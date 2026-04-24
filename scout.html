@@ -143,6 +143,21 @@
       </div>
     </template>
 
-    <script type="module" src="src/scout-app.js?v=inline-submit-status-20260423"></script>
+    <script>
+      window.__scoutBundleReady = false;
+      (() => {
+        const form = document.querySelector("#scoutForm");
+        const status = document.querySelector("#submitStatus");
+        if (!form || !status) return;
+
+        form.addEventListener("submit", (event) => {
+          if (window.__scoutBundleReady) return;
+          event.preventDefault();
+          status.textContent = "App is still loading. Wait a second, then try again.";
+          status.style.color = "var(--danger)";
+        });
+      })();
+    </script>
+    <script type="module" src="src/scout-app.js?v=mobile-safe-submit-20260423"></script>
   </body>
 </html>

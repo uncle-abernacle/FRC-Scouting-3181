@@ -520,22 +520,43 @@ function fromQuestionRow(row) {
   };
 }
 
+function markScoutBundleReady() {
+  window.__scoutBundleReady = true;
+}
+
+async function initScoutPage() {
+  try {
+    state.user = await setupAuthedPage();
+    if (!state.user) {
+      markScoutBundleReady();
+      return;
+    }
+
+    bindEvents();
+    applyFormSettings();
+    renderQuestions();
+    showStep(0);
+    markScoutBundleReady();
+
+    await loadQuestions();
+    await loadFormSettings();
+    subscribeToQuestions();
+    subscribeToFormSettings();
+  } catch (error) {
+    console.error(error);
+    setStatus("Load error", "offline");
+    setMessage(els.submitStatus, "Could not load the scouting app. Refresh and try again.", true);
+    markScoutBundleReady();
+  }
+}
+
 if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
   setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
   applyFormSettings();
   renderQuestions();
   showStep(0);
+  markScoutBundleReady();
 } else {
-  state.user = await setupAuthedPage();
-  if (state.user) {
-    bindEvents();
-    applyFormSettings();
-    renderQuestions();
-    showStep(0);
-    await loadQuestions();
-    await loadFormSettings();
-    subscribeToQuestions();
-    subscribeToFormSettings();
-  }
+  void initScoutPage();
 }

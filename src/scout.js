@@ -501,15 +501,11 @@ function fromQuestionRow(row) {
   };
 }
 
-if (!isSupabaseConfigured) {
-  setStatus("Needs config", "offline");
-  setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
-  applyFormSettings();
-  renderQuestions();
-  showStep(0);
-} else {
-  state.user = await setupAuthedPage();
-  if (state.user) {
+async function initScoutPageLegacy() {
+  try {
+    state.user = await setupAuthedPage();
+    if (!state.user) return;
+
     bindEvents();
     applyFormSettings();
     renderQuestions();
@@ -518,5 +514,19 @@ if (!isSupabaseConfigured) {
     await loadFormSettings();
     subscribeToQuestions();
     subscribeToFormSettings();
+  } catch (error) {
+    console.error(error);
+    setStatus("Load error", "offline");
+    setMessage(els.submitStatus, "Could not load the scouting app. Refresh and try again.", true);
   }
+}
+
+if (!isSupabaseConfigured) {
+  setStatus("Needs config", "offline");
+  setMessage(els.submitStatus, "Add your Supabase URL and anon key in src/supabase.js first.", true);
+  applyFormSettings();
+  renderQuestions();
+  showStep(0);
+} else {
+  void initScoutPageLegacy();
 }

@@ -503,18 +503,30 @@ function toQuestionRow(question) {
   };
 }
 
+async function initAdminPage() {
+  try {
+    if (!(await requireAdmin())) return;
+
+    bindEvents();
+    resetQuestionEditor();
+    renderAdminQuestions();
+    renderTemplates();
+    renderFormSettings();
+    await loadQuestions();
+    await loadTemplates();
+    await loadFormSettings();
+    subscribeToQuestions();
+    subscribeToTemplates();
+    subscribeToFormSettings();
+  } catch (error) {
+    console.error(error);
+    setStatus("Load error", "offline");
+    setMessage(els.questionStatus, "Could not load admin tools. Refresh and try again.", true);
+  }
+}
+
 if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
-} else if (await requireAdmin()) {
-  bindEvents();
-  resetQuestionEditor();
-  renderAdminQuestions();
-  renderTemplates();
-  renderFormSettings();
-  await loadQuestions();
-  await loadTemplates();
-  await loadFormSettings();
-  subscribeToQuestions();
-  subscribeToTemplates();
-  subscribeToFormSettings();
+} else {
+  void initAdminPage();
 }
