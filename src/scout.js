@@ -342,23 +342,10 @@ function bindEvents() {
     };
 
     try {
-      const { data: submissionId, error } = await supabase.rpc("submit_scouting_submission", {
-        p_event_code: submission.event_code,
-        p_match_number: submission.match_number,
-        p_team_number: submission.team_number,
-        p_scout_name: submission.scout_name,
-        p_scout_email: submission.scout_email,
-        p_scout_uid: submission.scout_uid,
-        p_alliance: submission.alliance,
-        p_station: submission.station,
-        p_starting_location: submission.starting_location,
-        p_notes: submission.notes,
-        p_answers: submission.answers,
-        p_device_created_at: submission.device_created_at,
-      });
+      const { error } = await supabase.from("submissions").insert(submission);
 
-      if (error || !submissionId) {
-        setMessage(els.submitStatus, `Could not submit: ${error?.message || "Supabase did not return a submission id."}`, true);
+      if (error) {
+        setMessage(els.submitStatus, `Could not submit: ${error.message}`, true);
         return;
       }
 
@@ -367,7 +354,6 @@ function bindEvents() {
       localStorage.setItem(
         "lastSubmission3181",
         JSON.stringify({
-          id: submissionId,
           createdAt: new Date().toISOString(),
           teamNumber: submission.team_number,
           matchNumber: submission.match_number,
