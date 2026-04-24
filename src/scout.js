@@ -323,14 +323,10 @@ function bindEvents() {
       device_created_at: new Date().toISOString(),
     };
 
-    const { data: insertedSubmission, error } = await supabase
-      .from("submissions")
-      .insert(submission)
-      .select("id, created_at")
-      .single();
+    const { error } = await supabase.from("submissions").insert(submission);
 
-    if (error || !insertedSubmission?.id) {
-      setMessage(els.submitStatus, `Could not submit: ${error?.message || "Supabase did not confirm the submission."}`, true);
+    if (error) {
+      setMessage(els.submitStatus, `Could not submit: ${error.message}`, true);
       return;
     }
 
@@ -339,8 +335,7 @@ function bindEvents() {
     localStorage.setItem(
       "lastSubmission3181",
       JSON.stringify({
-        id: insertedSubmission.id,
-        createdAt: insertedSubmission.created_at,
+        createdAt: new Date().toISOString(),
         teamNumber: submission.team_number,
         matchNumber: submission.match_number,
       }),
