@@ -9,6 +9,7 @@ const state = {
   user: null,
   currentStep: 0,
   formSettings: defaultFormSettings,
+  isSubmitting: false,
 };
 
 const steps = ["prematch", "auto", "teleop", "endgame", "review"];
@@ -228,6 +229,17 @@ function saveDraft() {
   localStorage.setItem("scoutDraft3181", JSON.stringify(draft));
 }
 
+function setSubmitting(isSubmitting) {
+  state.isSubmitting = isSubmitting;
+  els.submitButton.disabled = isSubmitting;
+  els.nextStepButton.disabled = isSubmitting;
+  els.prevStepButton.disabled = isSubmitting;
+  els.clearDraftButton.disabled = isSubmitting;
+  els.progressSteps.forEach((button) => {
+    button.disabled = isSubmitting;
+  });
+}
+
 function createStickyDraftAfterSubmit(formData) {
   const matchNumber = String(formData.get("matchNumber") || "").trim();
 
@@ -279,12 +291,14 @@ function bindEvents() {
   els.scoutForm.addEventListener("change", saveDraft);
   els.prevStepButton.addEventListener("click", () => showStep(state.currentStep - 1));
   els.nextStepButton.addEventListener("click", () => {
+    if (state.isSubmitting) return;
     if (validateCurrentStep()) {
       showStep(state.currentStep + 1);
     }
   });
   els.progressSteps.forEach((button) => {
     button.addEventListener("click", () => {
+      if (state.isSubmitting) return;
       const targetIndex = steps.indexOf(button.dataset.stepTarget);
       if (targetIndex <= state.currentStep || validateCurrentStep()) {
         showStep(targetIndex);
@@ -293,7 +307,9 @@ function bindEvents() {
   });
 
   els.clearDraftButton.addEventListener("click", () => {
+    if (state.isSubmitting) return;
     localStorage.removeItem("scoutDraft3181");
+    localStorage.removeItem("lastSubmission3181");
     els.scoutForm.reset();
     renderQuestions();
     showStep(0);
@@ -302,10 +318,12 @@ function bindEvents() {
 
   els.scoutForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (state.isSubmitting) return;
     if (!validateAllSteps()) {
       return;
     }
-    setMessage(els.submitStatus, "Submitting...");
+    setSubmitting(true);
+    setMessage(els.submitStatus, "Submitting to Supabase...");
 
     const formData = new FormData(els.scoutForm);
     const submission = {
@@ -323,32 +341,54 @@ function bindEvents() {
       device_created_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("submissions").insert(submission);
+    try {
+      const { data: submissionId, error } = await supabase.rpc("submit_scouting_submission", {
+        p_event_code: submission.event_code,
+        p_match_number: submission.match_number,
+        p_team_number: submission.team_number,
+        p_scout_name: submission.scout_name,
+        p_scout_email: submission.scout_email,
+        p_scout_uid: submission.scout_uid,
+        p_alliance: submission.alliance,
+        p_station: submission.station,
+        p_starting_location: submission.starting_location,
+        p_notes: submission.notes,
+        p_answers: submission.answers,
+        p_device_created_at: submission.device_created_at,
+      });
 
-    if (error) {
-      setMessage(els.submitStatus, `Could not submit: ${error.message}`, true);
-      return;
+      if (error || !submissionId) {
+        setMessage(els.submitStatus, `Could not submit: ${error?.message || "Supabase did not return a submission id."}`, true);
+        return;
+      }
+
+      const stickyDraft = createStickyDraftAfterSubmit(formData);
+      localStorage.setItem("scoutDraft3181", JSON.stringify(stickyDraft));
+      localStorage.setItem(
+        "lastSubmission3181",
+        JSON.stringify({
+          id: submissionId,
+          createdAt: new Date().toISOString(),
+          teamNumber: submission.team_number,
+          matchNumber: submission.match_number,
+        }),
+      );
+
+      els.scoutForm.reset();
+      renderQuestions();
+      showStep(0, false);
+      restoreDraft();
+      setMessage(
+        els.submitStatus,
+        `Submitted Match ${submission.match_number} for Team ${submission.team_number}.`,
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    const stickyDraft = createStickyDraftAfterSubmit(formData);
-    localStorage.setItem("scoutDraft3181", JSON.stringify(stickyDraft));
-    localStorage.setItem(
-      "lastSubmission3181",
-      JSON.stringify({
-        createdAt: new Date().toISOString(),
-        teamNumber: submission.team_number,
-        matchNumber: submission.match_number,
-      }),
-    );
-    els.scoutForm.reset();
-    renderQuestions();
-    restoreDraft();
-    showStep(0);
-    setMessage(els.submitStatus, `Submitted Match ${submission.match_number} for Team ${submission.team_number}.`);
   });
 }
 
-function showStep(index) {
+function showStep(index, shouldSave = true) {
   state.currentStep = Math.min(Math.max(index, 0), steps.length - 1);
   const current = steps[state.currentStep];
 
@@ -363,8 +403,12 @@ function showStep(index) {
   els.prevStepButton.classList.toggle("hidden", state.currentStep === 0);
   els.nextStepButton.classList.toggle("hidden", state.currentStep === steps.length - 1);
   els.submitButton.classList.toggle("hidden", state.currentStep !== steps.length - 1);
-  setMessage(els.submitStatus, "");
-  saveDraft();
+  if (!state.isSubmitting) {
+    setMessage(els.submitStatus, "");
+  }
+  if (shouldSave) {
+    saveDraft();
+  }
 }
 
 function validateCurrentStep() {

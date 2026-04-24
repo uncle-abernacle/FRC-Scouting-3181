@@ -25,6 +25,8 @@ Mobile-first scouting app for FRC Team 3181. Scouts create username/password acc
 5. Copy your project URL and anon public key into `src/supabase.js`.
 6. Start the app with `npm start`.
 
+If scouting submissions are not appearing, rerun `supabase/schema.sql` after pulling the latest code so Supabase has the current submit function and policies.
+
 The app keeps the scout login as username + password, but stores a hidden auth email behind the scenes. Older accounts may still use the legacy format:
 
 ```text

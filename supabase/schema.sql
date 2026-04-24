@@ -101,6 +101,73 @@ $$;
 
 grant execute on function public.get_auth_email_for_username(text) to anon, authenticated;
 
+create or replace function public.submit_scouting_submission(
+  p_event_code text,
+  p_match_number text,
+  p_team_number text,
+  p_scout_name text,
+  p_scout_email text,
+  p_scout_uid uuid,
+  p_alliance text,
+  p_station text,
+  p_starting_location text,
+  p_notes text,
+  p_answers jsonb,
+  p_device_created_at timestamptz
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  inserted_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  if auth.uid() <> p_scout_uid then
+    raise exception 'Scout uid does not match signed-in user';
+  end if;
+
+  insert into public.submissions (
+    event_code,
+    match_number,
+    team_number,
+    scout_name,
+    scout_email,
+    scout_uid,
+    alliance,
+    station,
+    starting_location,
+    notes,
+    answers,
+    device_created_at
+  ) values (
+    p_event_code,
+    p_match_number,
+    p_team_number,
+    p_scout_name,
+    p_scout_email,
+    p_scout_uid,
+    p_alliance,
+    p_station,
+    p_starting_location,
+    p_notes,
+    coalesce(p_answers, '{}'::jsonb),
+    p_device_created_at
+  )
+  returning id into inserted_id;
+
+  return inserted_id;
+end;
+$$;
+
+grant execute on function public.submit_scouting_submission(
+  text, text, text, text, text, uuid, text, text, text, text, jsonb, timestamptz
+) to authenticated;
+
 drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
 on public.profiles for select
