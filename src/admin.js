@@ -29,6 +29,10 @@ const PRESET_2026_TEMPLATE = {
   settings: defaultFormSettings,
   locked: true,
 };
+const RETIRED_PRESET_2026_QUESTION_IDS = new Set([
+  "teleop-preferred-scoring-location",
+  "overall-fouls-penalties",
+]);
 const IMMUTABLE_TEMPLATES = [BLANK_TEMPLATE];
 
 const els = {
@@ -240,7 +244,9 @@ function mergePresetQuestions(baseQuestions, overrideQuestions) {
 
   return [
     ...baseQuestions.map((question) => ({ ...question, ...(overrideById.get(question.id) || {}) })),
-    ...(overrideQuestions || []).filter((question) => !baseIds.has(question.id)),
+    ...(overrideQuestions || []).filter(
+      (question) => !baseIds.has(question.id) && !RETIRED_PRESET_2026_QUESTION_IDS.has(question.id),
+    ),
   ];
 }
 
