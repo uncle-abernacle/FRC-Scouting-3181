@@ -193,13 +193,30 @@ function currentPreset2026Template() {
     return PRESET_2026_TEMPLATE;
   }
 
+  const mergedQuestions = mergePresetQuestions(preset2026Questions, state.preset2026Override.questions || []);
   return {
     ...PRESET_2026_TEMPLATE,
     ...state.preset2026Override,
+    questions: mergedQuestions,
+    settings: mergeFormSettings(state.preset2026Override.settings || defaultFormSettings),
     id: PRESET_2026_TEMPLATE_ID,
     name: PRESET_2026_NAME,
     locked: true,
   };
+}
+
+function mergePresetQuestions(baseQuestions, overrideQuestions) {
+  const overrideById = new Map(
+    (overrideQuestions || [])
+      .filter((question) => question?.id)
+      .map((question) => [question.id, question]),
+  );
+  const baseIds = new Set(baseQuestions.map((question) => question.id));
+
+  return [
+    ...baseQuestions.map((question) => ({ ...question, ...(overrideById.get(question.id) || {}) })),
+    ...(overrideQuestions || []).filter((question) => !baseIds.has(question.id)),
+  ];
 }
 
 function editQuestion(id) {
