@@ -6,9 +6,8 @@ import { emptyState, escapeHtml, setStatus } from "./ui.js";
 const state = {
   submissions: [],
   selectedId: null,
+  questions: defaultQuestions,
 };
-
-const questionLabels = new Map(defaultQuestions.map((question) => [question.id, question.label]));
 
 const els = {
   submissionList: document.querySelector("#submissionList"),
@@ -62,7 +61,7 @@ function renderDetail(submission) {
   }
 
   els.submissionDetail.classList.remove("hidden");
-  const answers = Object.entries(submission.answers || {});
+  const answers = orderedAnswerEntries(submission);
   const detail = document.createElement("article");
   detail.className = "submission-detail-card";
   detail.innerHTML = `
@@ -71,7 +70,10 @@ function renderDetail(submission) {
         <p class="eyebrow">Submission detail</p>
         <h3>Team ${escapeHtml(submission.team_number)} / Match ${escapeHtml(submission.match_number)}</h3>
       </div>
-      <button class="small-button danger" type="button" data-delete="${submission.id}">Delete</button>
+      <div class="item-actions">
+        <button class="small-button" type="button" data-close-detail="true">Close</button>
+        <button class="small-button danger" type="button" data-delete="${submission.id}">Delete</button>
+      </div>
     </div>
     <div class="detail-grid">
       ${detailRow("Event", submission.event_code)}
@@ -118,7 +120,7 @@ function formatAnswerKey(key) {
   const words = String(key)
     .replaceAll("-", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
-  return questionLabels.get(key) || words;
+  return getQuestionLabels().get(key) || words;
 }
 
 function formatAnswerValue(value) {
@@ -131,6 +133,25 @@ function formatAnswerValue(value) {
 function toCsvValue(value) {
   const text = typeof value === "object" && value !== null ? JSON.stringify(value) : String(value ?? "");
   return `"${text.replaceAll('"', '""')}"`;
+}
+
+function getQuestionLabels() {
+  return new Map(state.questions.map((question) => [question.id, question.label]));
+}
+
+function orderedAnswerEntries(submission) {
+  const answers = Object.entries(submission.answers || {});
+  const answerMap = new Map(answers);
+  const orderedIds = new Set();
+  const orderedAnswers = state.questions
+    .filter((question) => answerMap.has(question.id))
+    .map((question) => {
+      orderedIds.add(question.id);
+      return [question.id, answerMap.get(question.id)];
+    });
+
+  const remainingAnswers = answers.filter(([key]) => !orderedIds.has(key));
+  return [...orderedAnswers, ...remainingAnswers];
 }
 
 function exportCsv() {
@@ -210,10 +231,40 @@ async function loadSubmissions() {
   setStatus("Online", "online");
 }
 
+async function loadQuestions() {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("id, label, question_order")
+    .order("question_order", { ascending: true });
+
+  if (error) {
+    console.warn(error);
+    state.questions = defaultQuestions;
+    renderSubmissions();
+    return;
+  }
+
+  state.questions = data?.length
+    ? data.map((question) => ({
+        id: question.id,
+        label: question.label,
+        order: question.question_order,
+      }))
+    : defaultQuestions;
+  renderSubmissions();
+}
+
 function subscribeToSubmissions() {
   supabase
     .channel("submissions-data")
     .on("postgres_changes", { event: "*", schema: "public", table: "submissions" }, loadSubmissions)
+    .subscribe();
+}
+
+function subscribeToQuestions() {
+  supabase
+    .channel("questions-data")
+    .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, loadQuestions)
     .subscribe();
 }
 
@@ -250,11 +301,19 @@ async function initDataPage() {
       const deleteId = event.target.dataset.delete;
       if (deleteId) {
         deleteSubmission(deleteId);
+        return;
+      }
+
+      if (event.target.dataset.closeDetail) {
+        state.selectedId = null;
+        renderSubmissions();
       }
     });
     renderSubmissions();
+    await loadQuestions();
     await loadSubmissions();
     bindRefreshEvents();
+    subscribeToQuestions();
     subscribeToSubmissions();
   } catch (error) {
     console.error(error);
