@@ -158,17 +158,22 @@ function buildQuestionInput(question) {
   }
 
   if (question.type === "toggle") {
-    const label = document.createElement("label");
-    const input = document.createElement("input");
-    const track = document.createElement("span");
+    const wrap = document.createElement("div");
+    const yesId = `${name}-yes`;
+    const noId = `${name}-no`;
 
-    label.className = "toggle-field";
-    input.type = "checkbox";
-    input.name = name;
-    input.required = required;
-    track.className = "toggle-track";
-    label.append(input, track);
-    return label;
+    wrap.className = "toggle-choice-group";
+    wrap.innerHTML = `
+      <label class="toggle-choice" for="${yesId}">
+        <input id="${yesId}" type="radio" name="${name}" value="true" ${required ? "required" : ""} />
+        <span>Yes</span>
+      </label>
+      <label class="toggle-choice" for="${noId}">
+        <input id="${noId}" type="radio" name="${name}" value="false" ${required ? "required" : ""} />
+        <span>No</span>
+      </label>
+    `;
+    return wrap;
   }
 
   if (question.type === "select") {
@@ -203,7 +208,8 @@ function collectAnswers(formData) {
     if (!field) return answers;
 
     if (question.type === "toggle") {
-      answers[question.id] = field.checked;
+      const value = formData.get(key);
+      answers[question.id] = value === "true";
     } else if (question.type === "counter" || question.type === "number") {
       answers[question.id] = Number(formData.get(key) || 0);
     } else {
@@ -282,10 +288,18 @@ function restoreDraft() {
   Object.entries(draft).forEach(([key, value]) => {
     if (key === "__step") return;
     const field = els.scoutForm.elements[key];
-    if (!field) return;
+    const fieldList = els.scoutForm.querySelectorAll(`[name="${CSS.escape(key)}"]`);
+    if (!field && !fieldList.length) return;
 
-    if (field.type === "checkbox") {
+    if (field?.type === "checkbox") {
       field.checked = Boolean(value);
+      return;
+    }
+
+    if (fieldList.length > 1) {
+      fieldList.forEach((option) => {
+        option.checked = option.value === String(value);
+      });
       return;
     }
 
