@@ -407,7 +407,8 @@ function validateCurrentStep() {
 function validateAllSteps() {
   for (let index = 0; index < els.stepPanels.length; index += 1) {
     const panel = els.stepPanels[index];
-    if (findRequiredProblem(panel)) {
+    const problem = findRequiredProblem(panel);
+    if (problem.emptyCounter || problem.invalid) {
       showStep(index);
       validatePanel(panel);
       return false;
