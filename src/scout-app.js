@@ -24,6 +24,10 @@ const els = {
   prevStepButton: document.querySelector("#prevStepButton"),
   nextStepButton: document.querySelector("#nextStepButton"),
   submitButton: document.querySelector("#submitButton"),
+  submitOverlay: document.querySelector("#submitOverlay"),
+  submitOverlayTitle: document.querySelector("#submitOverlayTitle"),
+  submitOverlayMessage: document.querySelector("#submitOverlayMessage"),
+  submitSpinner: document.querySelector("#submitSpinner"),
 };
 
 const defaultSubmitButtonText = els.submitButton?.textContent || "Submit scouting";
@@ -244,10 +248,13 @@ function setSubmitting(isSubmitting, phase = "idle") {
   els.scoutForm.classList.toggle("is-submitting", isSubmitting);
   if (phase === "submitting") {
     els.submitButton.textContent = "Submitting...";
+    showSubmitOverlay("Submitting", "Sending this match to Supabase...", true);
   } else if (phase === "submitted") {
     els.submitButton.textContent = "Submitted";
+    showSubmitOverlay("Submitted", "Saved to Supabase. Getting the next match ready...", false);
   } else {
     els.submitButton.textContent = defaultSubmitButtonText;
+    hideSubmitOverlay();
   }
 }
 
@@ -275,6 +282,23 @@ function incrementMatchNumber(value) {
 
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function showSubmitOverlay(title, message, showSpinner) {
+  if (!els.submitOverlay) return;
+  els.submitOverlay.classList.remove("hidden");
+  els.submitOverlay.setAttribute("aria-hidden", "false");
+  if (els.submitOverlayTitle) els.submitOverlayTitle.textContent = title;
+  if (els.submitOverlayMessage) els.submitOverlayMessage.textContent = message;
+  if (els.submitSpinner) {
+    els.submitSpinner.classList.toggle("hidden", !showSpinner);
+  }
+}
+
+function hideSubmitOverlay() {
+  if (!els.submitOverlay) return;
+  els.submitOverlay.classList.add("hidden");
+  els.submitOverlay.setAttribute("aria-hidden", "true");
 }
 
 function restoreDraft() {
@@ -380,7 +404,7 @@ function bindEvents() {
         els.submitStatus,
         `Submitted Match ${submission.match_number} for Team ${submission.team_number}. Resetting...`,
       );
-      await wait(1200);
+      await wait(2200);
 
       els.scoutForm.reset();
       renderQuestions();
