@@ -266,6 +266,10 @@ h3 {
   gap: 16px;
 }
 
+.scout-form.is-submitting {
+  opacity: 0.84;
+}
+
 .scout-progress {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -555,6 +559,13 @@ textarea:focus {
   background: linear-gradient(135deg, var(--pink), var(--pink-hot));
   color: #16000f;
   box-shadow: 0 16px 36px rgba(255, 15, 138, 0.28);
+}
+
+.primary-button:disabled,
+.ghost-button:disabled,
+.progress-step:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .ghost-button {

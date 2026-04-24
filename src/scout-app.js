@@ -26,6 +26,8 @@ const els = {
   submitButton: document.querySelector("#submitButton"),
 };
 
+const defaultSubmitButtonText = els.submitButton?.textContent || "Submit scouting";
+
 function sortedQuestions() {
   return sortQuestions(state.questions);
 }
@@ -229,7 +231,7 @@ function saveDraft() {
   localStorage.setItem("scoutDraft3181", JSON.stringify(draft));
 }
 
-function setSubmitting(isSubmitting) {
+function setSubmitting(isSubmitting, phase = "idle") {
   state.isSubmitting = isSubmitting;
   els.submitButton.disabled = isSubmitting;
   els.nextStepButton.disabled = isSubmitting;
@@ -238,6 +240,15 @@ function setSubmitting(isSubmitting) {
   els.progressSteps.forEach((button) => {
     button.disabled = isSubmitting;
   });
+
+  els.scoutForm.classList.toggle("is-submitting", isSubmitting);
+  if (phase === "submitting") {
+    els.submitButton.textContent = "Submitting...";
+  } else if (phase === "submitted") {
+    els.submitButton.textContent = "Submitted";
+  } else {
+    els.submitButton.textContent = defaultSubmitButtonText;
+  }
 }
 
 function createStickyDraftAfterSubmit(formData) {
@@ -260,6 +271,10 @@ function incrementMatchNumber(value) {
   }
 
   return String(Number(value) + 1);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function restoreDraft() {
@@ -322,7 +337,7 @@ function bindEvents() {
     if (!validateAllSteps()) {
       return;
     }
-    setSubmitting(true);
+    setSubmitting(true, "submitting");
     setMessage(els.submitStatus, "Submitting to Supabase...");
 
     const formData = new FormData(els.scoutForm);
@@ -360,14 +375,18 @@ function bindEvents() {
         }),
       );
 
+      setSubmitting(true, "submitted");
+      setMessage(
+        els.submitStatus,
+        `Submitted Match ${submission.match_number} for Team ${submission.team_number}. Resetting...`,
+      );
+      await wait(1200);
+
       els.scoutForm.reset();
       renderQuestions();
       showStep(0, false);
       restoreDraft();
-      setMessage(
-        els.submitStatus,
-        `Submitted Match ${submission.match_number} for Team ${submission.team_number}.`,
-      );
+      setMessage(els.submitStatus, `Ready for Match ${createStickyDraftAfterSubmit(formData).matchNumber}.`);
     } finally {
       setSubmitting(false);
     }
