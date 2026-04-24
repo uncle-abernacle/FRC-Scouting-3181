@@ -639,28 +639,44 @@ textarea:focus {
 }
 
 .template-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 10px;
 }
 
-.template-tab {
-  min-height: 40px;
-  padding: 0 14px;
+.template-dropdown {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 8px;
   background: rgba(5, 0, 5, 0.44);
-  color: var(--pink-soft);
-  font-weight: 900;
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
 }
 
-.template-tab:hover {
-  background: var(--pink);
-  color: #16000f;
+.template-dropdown[open] {
+  border-color: rgba(255, 123, 201, 0.45);
+  background: linear-gradient(180deg, rgba(49, 17, 43, 0.98), rgba(21, 7, 19, 0.98));
+}
+
+.template-dropdown-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px;
+}
+
+.template-dropdown-summary::-webkit-details-marker {
+  display: none;
+}
+
+.template-dropdown-summary strong {
+  color: var(--pink-soft);
+}
+
+.template-dropdown-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.template-question-list {
+  display: grid;
+  gap: 8px;
 }
 
 .admin-item,

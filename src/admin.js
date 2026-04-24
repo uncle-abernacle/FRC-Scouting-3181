@@ -46,7 +46,6 @@ const els = {
   createTemplateButton: document.querySelector("#createTemplateButton"),
   updateTemplateButton: document.querySelector("#updateTemplateButton"),
   templateTabs: document.querySelector("#templateTabs"),
-  templatePreviewList: document.querySelector("#templatePreviewList"),
   formSettingsForm: document.querySelector("#formSettingsForm"),
   resetSettingsButton: document.querySelector("#resetSettingsButton"),
   adminQuestionList: document.querySelector("#adminQuestionList"),
@@ -110,31 +109,55 @@ function renderTemplates() {
 
   const templates = [BLANK_TEMPLATE, currentPreset2026Template(), ...state.templates];
   templates.forEach((template) => {
-    const wrap = document.createElement("div");
-    wrap.className = "item-actions";
-
-    const tab = document.createElement("button");
-    tab.className = "template-tab";
-    tab.type = "button";
-    tab.dataset.templateId = template.id;
-    tab.textContent = template.name;
-    tab.classList.toggle("active", template.name === state.activeTemplateName);
-    wrap.append(tab);
-
-    if (!template.locked) {
-      const removeButton = document.createElement("button");
-      removeButton.className = "small-button danger";
-      removeButton.type = "button";
-      removeButton.dataset.deleteTemplateId = template.id;
-      removeButton.textContent = "Delete";
-      wrap.append(removeButton);
-    }
-
-    els.templateTabs.append(wrap);
+    const questions = sortQuestions(template.questions || []);
+    const card = document.createElement("details");
+    const isOpen = template.name === state.activeTemplateName || (!state.activeTemplateName && template.name === PRESET_2026_NAME);
+    card.className = "template-dropdown";
+    card.dataset.templateId = template.id;
+    card.open = isOpen;
+    card.innerHTML = `
+      <summary class="template-dropdown-summary">
+        <div>
+          <strong>${escapeHtml(template.name)}</strong>
+          <div class="meta">${questions.length} questions${template.locked ? " / built in" : ""}</div>
+        </div>
+      </summary>
+      <div class="template-dropdown-body">
+        <div class="item-actions">
+          <button class="small-button" type="button" data-load-template-id="${template.id}">Load</button>
+          ${template.locked ? "" : `<button class="small-button danger" type="button" data-deleteTemplateId="${template.id}">Delete</button>`}
+        </div>
+        <div class="template-question-list">
+          ${
+            questions.length
+              ? questions
+                  .map(
+                    (question) => `
+                      <article class="admin-item">
+                        <div class="item-topline">
+                          <div>
+                            <strong>${escapeHtml(question.label)}</strong>
+                            <div class="meta">${escapeHtml(question.phase)} / ${escapeHtml(question.type)} / order ${Number(question.order || 0)}</div>
+                          </div>
+                        </div>
+                      </article>
+                    `,
+                  )
+                  .join("")
+              : `
+                <div class="empty-state">
+                  <strong>No questions</strong>
+                  <span>This preset does not include any questions.</span>
+                </div>
+              `
+          }
+        </div>
+      </div>
+    `;
+    els.templateTabs.append(card);
   });
 
   renderTemplateEditorState();
-  renderTemplatePreview();
 }
 
 function renderFormSettings() {
@@ -177,65 +200,6 @@ function renderTemplateEditorState() {
     templateExists(activeName);
 
   els.updateTemplateButton.disabled = !canUpdate;
-}
-
-function renderTemplatePreview() {
-  els.templatePreviewList.innerHTML = "";
-
-  const template = resolvePreviewTemplate();
-  if (!template) {
-    els.templatePreviewList.append(emptyState("No preset selected", "Click a preset tab to preview its questions."));
-    return;
-  }
-
-  const questions = sortQuestions(template.questions || []);
-  if (!questions.length) {
-    els.templatePreviewList.append(emptyState(template.name, "This preset does not include any questions."));
-    return;
-  }
-
-  const header = document.createElement("article");
-  header.className = "admin-item";
-  header.innerHTML = `
-    <div class="item-topline">
-      <div>
-        <strong>${escapeHtml(template.name)}</strong>
-        <div class="meta">${questions.length} questions</div>
-      </div>
-    </div>
-  `;
-  els.templatePreviewList.append(header);
-
-  questions.forEach((question) => {
-    const item = document.createElement("article");
-    item.className = "admin-item";
-    item.innerHTML = `
-      <div class="item-topline">
-        <div>
-          <strong>${escapeHtml(question.label)}</strong>
-          <div class="meta">${escapeHtml(question.phase)} / ${escapeHtml(question.type)} / order ${Number(question.order || 0)}</div>
-        </div>
-      </div>
-    `;
-    els.templatePreviewList.append(item);
-  });
-}
-
-function resolvePreviewTemplate() {
-  const normalized = state.activeTemplateName.trim().toLowerCase();
-  if (!normalized) {
-    return currentPreset2026Template();
-  }
-
-  if (normalized === BLANK_TEMPLATE.name.toLowerCase()) {
-    return BLANK_TEMPLATE;
-  }
-
-  if (normalized === PRESET_2026_NAME.toLowerCase()) {
-    return currentPreset2026Template();
-  }
-
-  return state.templates.find((template) => String(template.name || "").toLowerCase() === normalized) || null;
 }
 
 function templateExists(name) {
@@ -332,9 +296,9 @@ function bindEvents() {
     renderTemplateEditorState();
   });
   els.templateTabs.addEventListener("click", (event) => {
-    const templateId = event.target.dataset.templateId;
-    if (templateId) {
-      loadTemplate(templateId);
+    const loadTemplateId = event.target.dataset.loadTemplateId;
+    if (loadTemplateId) {
+      loadTemplate(loadTemplateId);
       return;
     }
 
@@ -343,6 +307,27 @@ function bindEvents() {
       deleteTemplate(deleteTemplateId);
     }
   });
+  els.templateTabs.addEventListener(
+    "toggle",
+    (event) => {
+      const dropdown = event.target;
+      if (!dropdown.matches(".template-dropdown")) return;
+      if (!dropdown.open) return;
+
+      els.templateTabs.querySelectorAll(".template-dropdown[open]").forEach((item) => {
+        if (item !== dropdown) {
+          item.open = false;
+        }
+      });
+
+      const template = resolveTemplateById(dropdown.dataset.templateId);
+      if (!template) return;
+      state.activeTemplateName = template.name;
+      els.templateName.value = template.name;
+      renderTemplateEditorState();
+    },
+    true,
+  );
 
   els.questionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -473,9 +458,7 @@ async function updateTemplate() {
 }
 
 async function loadTemplate(templateId) {
-  const template =
-    [BLANK_TEMPLATE, currentPreset2026Template()].find((item) => item.id === templateId) ||
-    state.templates.find((item) => item.id === templateId);
+  const template = resolveTemplateById(templateId);
   if (!template) return;
 
   if (!confirm(`Load "${template.name}" into the live scouting form? This replaces the current live questions.`)) {
@@ -506,6 +489,10 @@ async function loadTemplate(templateId) {
   await loadQuestions();
   await loadFormSettings();
   renderTemplates();
+}
+
+function resolveTemplateById(templateId) {
+  return [BLANK_TEMPLATE, currentPreset2026Template(), ...state.templates].find((item) => item.id === templateId) || null;
 }
 
 async function deleteTemplate(templateId) {
