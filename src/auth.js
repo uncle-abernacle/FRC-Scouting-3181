@@ -39,7 +39,7 @@ export async function requireAdmin() {
 
   const isAdmin = await getAdminStatus(user);
   if (!isAdmin) {
-    window.location.replace("scout.html");
+    window.location.replace("match.html");
     return null;
   }
 

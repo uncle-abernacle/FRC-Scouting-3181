@@ -18,7 +18,7 @@ setStatus(isSupabaseConfigured ? "Ready" : "Needs config", isSupabaseConfigured 
 
 authState().then(async (user) => {
   if (!user) return;
-  window.location.replace((await getAdminStatus(user)) ? "admin.html" : "scout.html");
+  window.location.replace((await getAdminStatus(user)) ? "admin.html" : "match.html");
 });
 
 signInMode.addEventListener("click", () => setMode("signin"));
@@ -46,7 +46,7 @@ form.addEventListener("submit", async (event) => {
   try {
     const user = mode === "signup" ? await createAccount(username, password) : await signIn(username, password);
     const isAdmin = await getAdminStatus(user);
-    window.location.replace(isAdmin ? "admin.html" : "scout.html");
+    window.location.replace(isAdmin ? "admin.html" : "match.html");
   } catch (error) {
     setMessage(status, friendlyAuthError(error), true);
   }
