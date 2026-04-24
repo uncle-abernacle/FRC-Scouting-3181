@@ -217,6 +217,15 @@ function subscribeToSubmissions() {
     .subscribe();
 }
 
+function bindRefreshEvents() {
+  window.addEventListener("focus", loadSubmissions);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      loadSubmissions();
+    }
+  });
+}
+
 if (!isSupabaseConfigured) {
   setStatus("Needs config", "offline");
 } else if (await requireAdmin()) {
@@ -244,5 +253,6 @@ if (!isSupabaseConfigured) {
   });
   renderSubmissions();
   await loadSubmissions();
+  bindRefreshEvents();
   subscribeToSubmissions();
 }

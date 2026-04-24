@@ -323,19 +323,33 @@ function bindEvents() {
       device_created_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from("submissions").insert(submission);
-    if (error) {
-      setMessage(els.submitStatus, `Could not submit: ${error.message}`, true);
+    const { data: insertedSubmission, error } = await supabase
+      .from("submissions")
+      .insert(submission)
+      .select("id, created_at")
+      .single();
+
+    if (error || !insertedSubmission?.id) {
+      setMessage(els.submitStatus, `Could not submit: ${error?.message || "Supabase did not confirm the submission."}`, true);
       return;
     }
 
     const stickyDraft = createStickyDraftAfterSubmit(formData);
     localStorage.setItem("scoutDraft3181", JSON.stringify(stickyDraft));
+    localStorage.setItem(
+      "lastSubmission3181",
+      JSON.stringify({
+        id: insertedSubmission.id,
+        createdAt: insertedSubmission.created_at,
+        teamNumber: submission.team_number,
+        matchNumber: submission.match_number,
+      }),
+    );
     els.scoutForm.reset();
     renderQuestions();
     restoreDraft();
     showStep(0);
-    setMessage(els.submitStatus, "Submitted. Nice work.");
+    setMessage(els.submitStatus, `Submitted Match ${submission.match_number} for Team ${submission.team_number}.`);
   });
 }
 
