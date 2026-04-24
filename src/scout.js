@@ -228,6 +228,26 @@ function saveDraft() {
   localStorage.setItem("scoutDraft3181", JSON.stringify(draft));
 }
 
+function createStickyDraftAfterSubmit(formData) {
+  const matchNumber = String(formData.get("matchNumber") || "").trim();
+
+  return {
+    eventCode: formData.get("eventCode") || "",
+    matchNumber: incrementMatchNumber(matchNumber),
+    scoutName: formData.get("scoutName") || "",
+    station: formData.get("station") || "",
+    __step: "prematch",
+  };
+}
+
+function incrementMatchNumber(value) {
+  if (!/^\d+$/.test(value)) {
+    return value;
+  }
+
+  return String(Number(value) + 1);
+}
+
 function restoreDraft() {
   const draft = getDraft();
   Object.entries(draft).forEach(([key, value]) => {
@@ -307,9 +327,11 @@ function bindEvents() {
       return;
     }
 
-    localStorage.removeItem("scoutDraft3181");
+    const stickyDraft = createStickyDraftAfterSubmit(formData);
+    localStorage.setItem("scoutDraft3181", JSON.stringify(stickyDraft));
     els.scoutForm.reset();
     renderQuestions();
+    restoreDraft();
     showStep(0);
     setMessage(els.submitStatus, "Submitted. Nice work.");
   });

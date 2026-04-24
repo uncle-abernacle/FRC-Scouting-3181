@@ -10,6 +10,15 @@ const state = {
   formSettings: defaultFormSettings,
 };
 
+const BLANK_TEMPLATE_ID = "__blank__";
+const BLANK_TEMPLATE = {
+  id: BLANK_TEMPLATE_ID,
+  name: "Blank preset",
+  questions: [],
+  settings: defaultFormSettings,
+  locked: true,
+};
+
 const els = {
   questionForm: document.querySelector("#questionForm"),
   questionId: document.querySelector("#questionId"),
@@ -85,18 +94,28 @@ function renderAdminQuestions() {
 function renderTemplates() {
   els.templateTabs.innerHTML = "";
 
-  if (!state.templates.length) {
-    els.templateTabs.append(emptyState("No templates saved", "Create a template from the current questions."));
-    return;
-  }
+  const templates = [BLANK_TEMPLATE, ...state.templates];
+  templates.forEach((template) => {
+    const wrap = document.createElement("div");
+    wrap.className = "item-actions";
 
-  state.templates.forEach((template) => {
     const tab = document.createElement("button");
     tab.className = "template-tab";
     tab.type = "button";
     tab.dataset.templateId = template.id;
     tab.textContent = template.name;
-    els.templateTabs.append(tab);
+    wrap.append(tab);
+
+    if (!template.locked) {
+      const removeButton = document.createElement("button");
+      removeButton.className = "small-button danger";
+      removeButton.type = "button";
+      removeButton.dataset.deleteTemplateId = template.id;
+      removeButton.textContent = "Delete";
+      wrap.append(removeButton);
+    }
+
+    els.templateTabs.append(wrap);
   });
 }
 
@@ -167,6 +186,12 @@ function bindEvents() {
     const templateId = event.target.dataset.templateId;
     if (templateId) {
       loadTemplate(templateId);
+      return;
+    }
+
+    const deleteTemplateId = event.target.dataset.deleteTemplateId;
+    if (deleteTemplateId) {
+      deleteTemplate(deleteTemplateId);
     }
   });
 
@@ -223,6 +248,11 @@ async function createTemplate() {
     return;
   }
 
+  if (name.toLowerCase() === BLANK_TEMPLATE.name.toLowerCase()) {
+    setMessage(els.questionStatus, `"${BLANK_TEMPLATE.name}" is reserved. Pick a different preset name.`, true);
+    return;
+  }
+
   const questions = sortedQuestions().map((question) => ({
     id: question.id,
     label: question.label,
@@ -255,7 +285,8 @@ async function createTemplate() {
 }
 
 async function loadTemplate(templateId) {
-  const template = state.templates.find((item) => item.id === templateId);
+  const template =
+    templateId === BLANK_TEMPLATE_ID ? BLANK_TEMPLATE : state.templates.find((item) => item.id === templateId);
   if (!template) return;
 
   if (!confirm(`Load "${template.name}" into the live scouting form? This replaces the current live questions.`)) {
@@ -283,6 +314,26 @@ async function loadTemplate(templateId) {
   setMessage(els.questionStatus, `${template.name} loaded into the live scouting form.`);
   await loadQuestions();
   await loadFormSettings();
+}
+
+async function deleteTemplate(templateId) {
+  const template = state.templates.find((item) => item.id === templateId);
+  if (!template) return;
+
+  if (!confirm(`Delete preset "${template.name}"?`)) {
+    return;
+  }
+
+  setMessage(els.questionStatus, `Deleting ${template.name}...`);
+  const { error } = await supabase.from("question_templates").delete().eq("id", templateId);
+
+  if (error) {
+    setMessage(els.questionStatus, error.message, true);
+    return;
+  }
+
+  setMessage(els.questionStatus, `${template.name} deleted.`);
+  await loadTemplates();
 }
 
 async function saveFormSettings(event) {
