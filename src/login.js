@@ -9,6 +9,7 @@ const authButton = document.querySelector("#authButton");
 const signInMode = document.querySelector("#signInMode");
 const signUpMode = document.querySelector("#signUpMode");
 const usernameInput = document.querySelector("#username");
+const usernameFormatNote = document.querySelector("#usernameFormatNote");
 const passwordInput = document.querySelector("#password");
 const passwordToggle = document.querySelector("#passwordToggle");
 
@@ -59,6 +60,8 @@ function setMode(nextMode) {
   authButton.textContent = isSignup ? "Make account" : "Enter app";
   signInMode.classList.toggle("active", !isSignup);
   signUpMode.classList.toggle("active", isSignup);
+  usernameInput.placeholder = isSignup ? "firstnameL" : "";
+  usernameFormatNote.classList.toggle("hidden", !isSignup);
   passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
   setMessage(status, "");
 }
