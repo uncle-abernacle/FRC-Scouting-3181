@@ -25,11 +25,13 @@ Mobile-first scouting app for FRC Team 3181. Scouts create username/password acc
 5. Copy your project URL and anon public key into `src/supabase.js`.
 6. Start the app with `npm start`.
 
-The app turns usernames into fake Supabase Auth emails using this format:
+The app keeps the scout login as username + password, but stores a hidden auth email behind the scenes. Older accounts may still use the legacy format:
 
 ```text
 username@3181scouting.app
 ```
+
+Newer accounts use a hidden unique email so a deleted username can be reused later without getting stuck as permanently "taken."
 
 If signup says `email rate limit exceeded`, Supabase is still trying to send confirmation emails. In the Supabase dashboard, go to **Authentication** -> **Sign In / Providers** -> **Email**, then turn off **Confirm email**. Wait about a minute for the rate limit to cool down before trying again.
 

@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
+  auth_email text unique,
   is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -64,6 +65,11 @@ alter table public.submissions enable row level security;
 alter table public.submissions add column if not exists starting_location text;
 alter table public.submissions add column if not exists preload_fuel text;
 alter table public.question_templates add column if not exists settings jsonb not null default '{}';
+alter table public.profiles add column if not exists auth_email text;
+
+update public.profiles
+set auth_email = coalesce(auth_email, username || '@3181scouting.app')
+where auth_email is null;
 
 create or replace function public.is_admin()
 returns boolean
@@ -79,6 +85,21 @@ as $$
       and is_admin = true
   );
 $$;
+
+create or replace function public.get_auth_email_for_username(input_username text)
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select auth_email
+  from public.profiles
+  where username = lower(trim(input_username))
+  limit 1;
+$$;
+
+grant execute on function public.get_auth_email_for_username(text) to anon, authenticated;
 
 drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
@@ -156,6 +177,7 @@ to authenticated
 using (public.is_admin());
 
 create index if not exists profiles_username_idx on public.profiles (username);
+create unique index if not exists profiles_auth_email_idx on public.profiles (auth_email) where auth_email is not null;
 create index if not exists submissions_created_at_idx on public.submissions (created_at desc);
 create index if not exists questions_order_idx on public.questions (question_order);
 create index if not exists question_templates_name_idx on public.question_templates (name);

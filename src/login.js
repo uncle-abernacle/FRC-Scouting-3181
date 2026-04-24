@@ -36,7 +36,6 @@ form.addEventListener("submit", async (event) => {
   setMessage(status, mode === "signin" ? "Signing in..." : "Creating account...");
 
   const username = normalizeUsername(usernameInput.value);
-  const email = usernameToEmail(username);
   const password = passwordInput.value;
 
   if (!username) {
@@ -45,7 +44,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   try {
-    const user = mode === "signup" ? await createAccount(username, email, password) : await signIn(username, email, password);
+    const user = mode === "signup" ? await createAccount(username, password) : await signIn(username, password);
     const isAdmin = await getAdminStatus(user);
     window.location.replace(isAdmin ? "admin.html" : "scout.html");
   } catch (error) {
@@ -71,9 +70,15 @@ function togglePasswordVisibility() {
   passwordToggle.setAttribute("aria-pressed", String(shouldShow));
 }
 
-async function createAccount(username, email, password) {
+async function createAccount(username, password) {
+  const existingEmail = await resolveAuthEmailForUsername(username);
+  if (existingEmail) {
+    throw new Error("That username is already taken.");
+  }
+
+  const hiddenEmail = createHiddenEmail(username);
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: hiddenEmail,
     password,
     options: {
       data: { username },
@@ -94,6 +99,7 @@ async function createAccount(username, email, password) {
   const { error: profileError } = await supabase.from("profiles").insert({
     id: user.id,
     username,
+    auth_email: hiddenEmail,
     is_admin: false,
   });
 
@@ -104,7 +110,8 @@ async function createAccount(username, email, password) {
   return user;
 }
 
-async function signIn(username, email, password) {
+async function signIn(username, password) {
+  const email = (await resolveAuthEmailForUsername(username)) || legacyUsernameToEmail(username);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
 
@@ -121,6 +128,7 @@ async function ensureProfile(user, username) {
     {
       id: user.id,
       username,
+      auth_email: user.email,
     },
     { onConflict: "id", ignoreDuplicates: true },
   );
@@ -135,8 +143,28 @@ function normalizeUsername(value) {
   return /^[a-z0-9_-]{3,24}$/.test(username) ? username : "";
 }
 
-function usernameToEmail(username) {
+function legacyUsernameToEmail(username) {
   return `${username}@3181scouting.app`;
+}
+
+function createHiddenEmail(username) {
+  const token = typeof crypto?.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${username}--${token}@3181scouting.app`;
+}
+
+async function resolveAuthEmailForUsername(username) {
+  const { data, error } = await supabase.rpc("get_auth_email_for_username", {
+    input_username: username,
+  });
+
+  if (error) {
+    console.warn(error);
+    return null;
+  }
+
+  return data || null;
 }
 
 function friendlyAuthError(error) {
@@ -152,6 +180,10 @@ function friendlyAuthError(error) {
 
   if (String(error.message).toLowerCase().includes("email rate limit")) {
     return "Supabase is trying to send confirmation emails. Turn off email confirmation in Supabase Auth settings, then try again.";
+  }
+
+  if (String(error.message).toLowerCase().includes("already taken")) {
+    return "That username is already taken.";
   }
 
   return messages[error.code] || error.message;
