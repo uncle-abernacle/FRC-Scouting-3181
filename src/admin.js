@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from "./supabase.js";
 import { requireAdmin } from "./auth.js";
 import { defaultFormSettings, mergeFormSettings } from "./formSettings.js";
-import { defaultQuestions, sortQuestions } from "./questions.js";
+import { defaultQuestions, preset2026Questions, sortQuestions } from "./questions.js";
 import { emptyState, escapeHtml, setMessage, setStatus } from "./ui.js";
 
 const state = {
@@ -11,6 +11,7 @@ const state = {
 };
 
 const BLANK_TEMPLATE_ID = "__blank__";
+const PRESET_2026_TEMPLATE_ID = "__preset_2026__";
 const BLANK_TEMPLATE = {
   id: BLANK_TEMPLATE_ID,
   name: "Blank preset",
@@ -18,6 +19,14 @@ const BLANK_TEMPLATE = {
   settings: defaultFormSettings,
   locked: true,
 };
+const PRESET_2026_TEMPLATE = {
+  id: PRESET_2026_TEMPLATE_ID,
+  name: "2026 preset",
+  questions: preset2026Questions,
+  settings: defaultFormSettings,
+  locked: true,
+};
+const LOCKED_TEMPLATES = [BLANK_TEMPLATE, PRESET_2026_TEMPLATE];
 
 const els = {
   questionForm: document.querySelector("#questionForm"),
@@ -94,7 +103,7 @@ function renderAdminQuestions() {
 function renderTemplates() {
   els.templateTabs.innerHTML = "";
 
-  const templates = [BLANK_TEMPLATE, ...state.templates];
+  const templates = [...LOCKED_TEMPLATES, ...state.templates];
   templates.forEach((template) => {
     const wrap = document.createElement("div");
     wrap.className = "item-actions";
@@ -248,8 +257,9 @@ async function createTemplate() {
     return;
   }
 
-  if (name.toLowerCase() === BLANK_TEMPLATE.name.toLowerCase()) {
-    setMessage(els.questionStatus, `"${BLANK_TEMPLATE.name}" is reserved. Pick a different preset name.`, true);
+  const reservedTemplate = LOCKED_TEMPLATES.find((template) => template.name.toLowerCase() === name.toLowerCase());
+  if (reservedTemplate) {
+    setMessage(els.questionStatus, `"${reservedTemplate.name}" is reserved. Pick a different preset name.`, true);
     return;
   }
 
@@ -285,8 +295,7 @@ async function createTemplate() {
 }
 
 async function loadTemplate(templateId) {
-  const template =
-    templateId === BLANK_TEMPLATE_ID ? BLANK_TEMPLATE : state.templates.find((item) => item.id === templateId);
+  const template = LOCKED_TEMPLATES.find((item) => item.id === templateId) || state.templates.find((item) => item.id === templateId);
   if (!template) return;
 
   if (!confirm(`Load "${template.name}" into the live scouting form? This replaces the current live questions.`)) {
@@ -438,7 +447,8 @@ async function loadTemplates() {
     return;
   }
 
-  state.templates = data || [];
+  const lockedNames = new Set(LOCKED_TEMPLATES.map((template) => template.name.toLowerCase()));
+  state.templates = (data || []).filter((template) => !lockedNames.has(String(template.name || "").toLowerCase()));
   renderTemplates();
 }
 
