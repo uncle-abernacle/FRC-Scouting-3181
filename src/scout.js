@@ -235,7 +235,9 @@ function createStickyDraftAfterSubmit(formData) {
     eventCode: formData.get("eventCode") || "",
     matchNumber: incrementMatchNumber(matchNumber),
     scoutName: formData.get("scoutName") || "",
+    alliance: formData.get("alliance") || "",
     station: formData.get("station") || "",
+    startingLocation: formData.get("startingLocation") || "",
     __step: "prematch",
   };
 }
