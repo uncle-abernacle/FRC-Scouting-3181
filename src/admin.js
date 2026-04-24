@@ -29,6 +29,7 @@ const PRESET_2026_TEMPLATE = {
   settings: defaultFormSettings,
   locked: true,
 };
+const PRESET_REMOVED_FLAG = "__removed";
 const RETIRED_PRESET_2026_QUESTION_IDS = new Set([
   "teleop-preferred-scoring-location",
   "overall-fouls-penalties",
@@ -143,6 +144,16 @@ function renderTemplates() {
                             <strong>${escapeHtml(question.label)}</strong>
                             <div class="meta">${escapeHtml(question.phase)} / ${escapeHtml(question.type)} / order ${Number(question.order || 0)}</div>
                           </div>
+                          ${template.id === BLANK_TEMPLATE_ID ? "" : `
+                            <div class="item-actions">
+                              <button
+                                class="small-button danger"
+                                type="button"
+                                data-remove-template-question-id="${template.id}"
+                                data-question-id="${question.id}"
+                              >Remove</button>
+                            </div>
+                          `}
                         </div>
                       </article>
                     `,
@@ -241,13 +252,39 @@ function mergePresetQuestions(baseQuestions, overrideQuestions) {
       .map((question) => [question.id, question]),
   );
   const baseIds = new Set(baseQuestions.map((question) => question.id));
+  const removedIds = new Set(
+    (overrideQuestions || [])
+      .filter((question) => question?.[PRESET_REMOVED_FLAG])
+      .map((question) => question.id),
+  );
 
   return [
-    ...baseQuestions.map((question) => ({ ...question, ...(overrideById.get(question.id) || {}) })),
+    ...baseQuestions
+      .filter((question) => !removedIds.has(question.id))
+      .map((question) => {
+        const override = overrideById.get(question.id);
+        return override?.[PRESET_REMOVED_FLAG] ? null : { ...question, ...(override || {}) };
+      })
+      .filter(Boolean),
     ...(overrideQuestions || []).filter(
-      (question) => !baseIds.has(question.id) && !RETIRED_PRESET_2026_QUESTION_IDS.has(question.id),
+      (question) =>
+        !baseIds.has(question.id) &&
+        !RETIRED_PRESET_2026_QUESTION_IDS.has(question.id) &&
+        !question?.[PRESET_REMOVED_FLAG],
     ),
   ];
+}
+
+function buildPresetOverrideQuestions(currentQuestions) {
+  const currentById = new Map((currentQuestions || []).map((question) => [question.id, question]));
+  const removedBaseQuestions = preset2026Questions
+    .filter((question) => !currentById.has(question.id))
+    .map((question) => ({
+      id: question.id,
+      [PRESET_REMOVED_FLAG]: true,
+    }));
+
+  return [...(currentQuestions || []), ...removedBaseQuestions];
 }
 
 function editQuestion(id) {
@@ -305,6 +342,13 @@ function bindEvents() {
     const loadTemplateId = event.target.dataset.loadTemplateId;
     if (loadTemplateId) {
       loadTemplate(loadTemplateId);
+      return;
+    }
+
+    const removeTemplateQuestionId = event.target.dataset.removeTemplateQuestionId;
+    const questionId = event.target.dataset.questionId;
+    if (removeTemplateQuestionId && questionId) {
+      removeQuestionFromTemplate(removeTemplateQuestionId, questionId);
       return;
     }
 
@@ -441,11 +485,15 @@ async function updateTemplate() {
   }
 
   const { questions, settings } = captureCurrentTemplate();
+  const templateQuestions =
+    name.toLowerCase() === PRESET_2026_NAME.toLowerCase()
+      ? buildPresetOverrideQuestions(questions)
+      : questions;
   setMessage(els.questionStatus, `Updating ${name}...`);
   const { error } = await supabase.from("question_templates").upsert(
     {
       name,
-      questions,
+      questions: templateQuestions,
       settings,
       updated_at: new Date().toISOString(),
     },
@@ -499,6 +547,43 @@ async function loadTemplate(templateId) {
 
 function resolveTemplateById(templateId) {
   return [BLANK_TEMPLATE, currentPreset2026Template(), ...state.templates].find((item) => item.id === templateId) || null;
+}
+
+async function removeQuestionFromTemplate(templateId, questionId) {
+  const template = resolveTemplateById(templateId);
+  if (!template || template.id === BLANK_TEMPLATE_ID) return;
+
+  const question = (template.questions || []).find((item) => item.id === questionId);
+  if (!question) return;
+
+  if (!confirm(`Remove "${question.label}" from ${template.name}?`)) {
+    return;
+  }
+
+  const nextQuestions = sortQuestions(template.questions || []).filter((item) => item.id !== questionId);
+  const storedQuestions =
+    template.id === PRESET_2026_TEMPLATE_ID ? buildPresetOverrideQuestions(nextQuestions) : nextQuestions;
+
+  setMessage(els.questionStatus, `Removing ${question.label} from ${template.name}...`);
+  const { error } = await supabase.from("question_templates").upsert(
+    {
+      name: template.name,
+      questions: storedQuestions,
+      settings: template.settings || defaultFormSettings,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "name" },
+  );
+
+  if (error) {
+    setMessage(els.questionStatus, error.message, true);
+    return;
+  }
+
+  state.activeTemplateName = template.name;
+  els.templateName.value = template.name;
+  setMessage(els.questionStatus, `${question.label} removed from ${template.name}.`);
+  await loadTemplates();
 }
 
 async function deleteTemplate(templateId) {
