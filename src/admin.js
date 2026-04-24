@@ -46,6 +46,7 @@ const els = {
   createTemplateButton: document.querySelector("#createTemplateButton"),
   updateTemplateButton: document.querySelector("#updateTemplateButton"),
   templateTabs: document.querySelector("#templateTabs"),
+  templatePreviewList: document.querySelector("#templatePreviewList"),
   formSettingsForm: document.querySelector("#formSettingsForm"),
   resetSettingsButton: document.querySelector("#resetSettingsButton"),
   adminQuestionList: document.querySelector("#adminQuestionList"),
@@ -133,6 +134,7 @@ function renderTemplates() {
   });
 
   renderTemplateEditorState();
+  renderTemplatePreview();
 }
 
 function renderFormSettings() {
@@ -175,6 +177,65 @@ function renderTemplateEditorState() {
     templateExists(activeName);
 
   els.updateTemplateButton.disabled = !canUpdate;
+}
+
+function renderTemplatePreview() {
+  els.templatePreviewList.innerHTML = "";
+
+  const template = resolvePreviewTemplate();
+  if (!template) {
+    els.templatePreviewList.append(emptyState("No preset selected", "Click a preset tab to preview its questions."));
+    return;
+  }
+
+  const questions = sortQuestions(template.questions || []);
+  if (!questions.length) {
+    els.templatePreviewList.append(emptyState(template.name, "This preset does not include any questions."));
+    return;
+  }
+
+  const header = document.createElement("article");
+  header.className = "admin-item";
+  header.innerHTML = `
+    <div class="item-topline">
+      <div>
+        <strong>${escapeHtml(template.name)}</strong>
+        <div class="meta">${questions.length} questions</div>
+      </div>
+    </div>
+  `;
+  els.templatePreviewList.append(header);
+
+  questions.forEach((question) => {
+    const item = document.createElement("article");
+    item.className = "admin-item";
+    item.innerHTML = `
+      <div class="item-topline">
+        <div>
+          <strong>${escapeHtml(question.label)}</strong>
+          <div class="meta">${escapeHtml(question.phase)} / ${escapeHtml(question.type)} / order ${Number(question.order || 0)}</div>
+        </div>
+      </div>
+    `;
+    els.templatePreviewList.append(item);
+  });
+}
+
+function resolvePreviewTemplate() {
+  const normalized = state.activeTemplateName.trim().toLowerCase();
+  if (!normalized) {
+    return currentPreset2026Template();
+  }
+
+  if (normalized === BLANK_TEMPLATE.name.toLowerCase()) {
+    return BLANK_TEMPLATE;
+  }
+
+  if (normalized === PRESET_2026_NAME.toLowerCase()) {
+    return currentPreset2026Template();
+  }
+
+  return state.templates.find((template) => String(template.name || "").toLowerCase() === normalized) || null;
 }
 
 function templateExists(name) {
