@@ -7,11 +7,14 @@ import { emptyState, escapeHtml, setMessage, setStatus } from "./ui.js";
 const state = {
   questions: defaultQuestions,
   templates: [],
+  preset2026Override: null,
   formSettings: defaultFormSettings,
+  activeTemplateName: "",
 };
 
 const BLANK_TEMPLATE_ID = "__blank__";
 const PRESET_2026_TEMPLATE_ID = "__preset_2026__";
+const PRESET_2026_NAME = "2026 preset";
 const BLANK_TEMPLATE = {
   id: BLANK_TEMPLATE_ID,
   name: "Blank preset",
@@ -21,12 +24,12 @@ const BLANK_TEMPLATE = {
 };
 const PRESET_2026_TEMPLATE = {
   id: PRESET_2026_TEMPLATE_ID,
-  name: "2026 preset",
+  name: PRESET_2026_NAME,
   questions: preset2026Questions,
   settings: defaultFormSettings,
   locked: true,
 };
-const LOCKED_TEMPLATES = [BLANK_TEMPLATE, PRESET_2026_TEMPLATE];
+const IMMUTABLE_TEMPLATES = [BLANK_TEMPLATE];
 
 const els = {
   questionForm: document.querySelector("#questionForm"),
@@ -41,6 +44,7 @@ const els = {
   resetQuestionButton: document.querySelector("#resetQuestionButton"),
   templateName: document.querySelector("#templateName"),
   createTemplateButton: document.querySelector("#createTemplateButton"),
+  updateTemplateButton: document.querySelector("#updateTemplateButton"),
   templateTabs: document.querySelector("#templateTabs"),
   formSettingsForm: document.querySelector("#formSettingsForm"),
   resetSettingsButton: document.querySelector("#resetSettingsButton"),
@@ -103,7 +107,7 @@ function renderAdminQuestions() {
 function renderTemplates() {
   els.templateTabs.innerHTML = "";
 
-  const templates = [...LOCKED_TEMPLATES, ...state.templates];
+  const templates = [BLANK_TEMPLATE, currentPreset2026Template(), ...state.templates];
   templates.forEach((template) => {
     const wrap = document.createElement("div");
     wrap.className = "item-actions";
@@ -113,6 +117,7 @@ function renderTemplates() {
     tab.type = "button";
     tab.dataset.templateId = template.id;
     tab.textContent = template.name;
+    tab.classList.toggle("active", template.name === state.activeTemplateName);
     wrap.append(tab);
 
     if (!template.locked) {
@@ -126,6 +131,8 @@ function renderTemplates() {
 
     els.templateTabs.append(wrap);
   });
+
+  renderTemplateEditorState();
 }
 
 function renderFormSettings() {
@@ -160,6 +167,41 @@ function resetQuestionEditor() {
   els.questionOptions.value = "";
 }
 
+function renderTemplateEditorState() {
+  const activeName = state.activeTemplateName.trim();
+  const canUpdate =
+    Boolean(activeName) &&
+    activeName.toLowerCase() !== BLANK_TEMPLATE.name.toLowerCase() &&
+    templateExists(activeName);
+
+  els.updateTemplateButton.disabled = !canUpdate;
+}
+
+function templateExists(name) {
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return false;
+
+  if (normalized === PRESET_2026_NAME.toLowerCase()) {
+    return true;
+  }
+
+  return state.templates.some((template) => String(template.name || "").toLowerCase() === normalized);
+}
+
+function currentPreset2026Template() {
+  if (!state.preset2026Override) {
+    return PRESET_2026_TEMPLATE;
+  }
+
+  return {
+    ...PRESET_2026_TEMPLATE,
+    ...state.preset2026Override,
+    id: PRESET_2026_TEMPLATE_ID,
+    name: PRESET_2026_NAME,
+    locked: true,
+  };
+}
+
 function editQuestion(id) {
   const question = state.questions.find((item) => item.id === id);
   if (!question) return;
@@ -182,14 +224,34 @@ function slugify(value) {
     .slice(0, 48);
 }
 
+function captureCurrentTemplate() {
+  return {
+    questions: sortedQuestions().map((question) => ({
+      id: question.id,
+      label: question.label,
+      type: question.type,
+      phase: question.phase,
+      order: Number(question.order || 0),
+      required: Boolean(question.required),
+      options: question.options || [],
+    })),
+    settings: state.formSettings,
+  };
+}
+
 function bindEvents() {
   els.resetQuestionButton.addEventListener("click", resetQuestionEditor);
   els.createTemplateButton.addEventListener("click", createTemplate);
+  els.updateTemplateButton.addEventListener("click", updateTemplate);
   els.formSettingsForm.addEventListener("submit", saveFormSettings);
   els.resetSettingsButton.addEventListener("click", () => {
     state.formSettings = defaultFormSettings;
     renderFormSettings();
     saveSettings(defaultFormSettings, true);
+  });
+  els.templateName.addEventListener("input", () => {
+    state.activeTemplateName = els.templateName.value.trim();
+    renderTemplateEditorState();
   });
   els.templateTabs.addEventListener("click", (event) => {
     const templateId = event.target.dataset.templateId;
@@ -257,28 +319,25 @@ async function createTemplate() {
     return;
   }
 
-  const reservedTemplate = LOCKED_TEMPLATES.find((template) => template.name.toLowerCase() === name.toLowerCase());
+  const reservedTemplate = IMMUTABLE_TEMPLATES.find((template) => template.name.toLowerCase() === name.toLowerCase());
   if (reservedTemplate) {
     setMessage(els.questionStatus, `"${reservedTemplate.name}" is reserved. Pick a different preset name.`, true);
     return;
   }
 
-  const questions = sortedQuestions().map((question) => ({
-    id: question.id,
-    label: question.label,
-    type: question.type,
-    phase: question.phase,
-    order: Number(question.order || 0),
-    required: Boolean(question.required),
-    options: question.options || [],
-  }));
+  if (name.toLowerCase() === PRESET_2026_NAME.toLowerCase()) {
+    setMessage(els.questionStatus, `Use "Update preset" if you want to change ${PRESET_2026_NAME}.`, true);
+    return;
+  }
+
+  const { questions, settings } = captureCurrentTemplate();
 
   setMessage(els.questionStatus, "Creating template...");
   const { error } = await supabase.from("question_templates").upsert(
     {
       name,
       questions,
-      settings: state.formSettings,
+      settings,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "name" },
@@ -289,13 +348,56 @@ async function createTemplate() {
     return;
   }
 
-  els.templateName.value = "";
+  state.activeTemplateName = name;
+  els.templateName.value = name;
   setMessage(els.questionStatus, "Template saved.");
   await loadTemplates();
 }
 
+async function updateTemplate() {
+  const name = els.templateName.value.trim() || state.activeTemplateName.trim();
+  if (!name) {
+    setMessage(els.questionStatus, "Load a preset or type its name first.", true);
+    return;
+  }
+
+  if (name.toLowerCase() === BLANK_TEMPLATE.name.toLowerCase()) {
+    setMessage(els.questionStatus, `${BLANK_TEMPLATE.name} cannot be changed.`, true);
+    return;
+  }
+
+  if (!templateExists(name)) {
+    setMessage(els.questionStatus, `No preset named "${name}" exists yet. Create it first.`, true);
+    return;
+  }
+
+  const { questions, settings } = captureCurrentTemplate();
+  setMessage(els.questionStatus, `Updating ${name}...`);
+  const { error } = await supabase.from("question_templates").upsert(
+    {
+      name,
+      questions,
+      settings,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "name" },
+  );
+
+  if (error) {
+    setMessage(els.questionStatus, error.message, true);
+    return;
+  }
+
+  state.activeTemplateName = name;
+  els.templateName.value = name;
+  setMessage(els.questionStatus, `${name} updated.`);
+  await loadTemplates();
+}
+
 async function loadTemplate(templateId) {
-  const template = LOCKED_TEMPLATES.find((item) => item.id === templateId) || state.templates.find((item) => item.id === templateId);
+  const template =
+    [BLANK_TEMPLATE, currentPreset2026Template()].find((item) => item.id === templateId) ||
+    state.templates.find((item) => item.id === templateId);
   if (!template) return;
 
   if (!confirm(`Load "${template.name}" into the live scouting form? This replaces the current live questions.`)) {
@@ -320,9 +422,12 @@ async function loadTemplate(templateId) {
   }
 
   await saveSettings(template.settings || defaultFormSettings, false);
+  state.activeTemplateName = template.name;
+  els.templateName.value = template.name;
   setMessage(els.questionStatus, `${template.name} loaded into the live scouting form.`);
   await loadQuestions();
   await loadFormSettings();
+  renderTemplates();
 }
 
 async function deleteTemplate(templateId) {
@@ -341,6 +446,10 @@ async function deleteTemplate(templateId) {
     return;
   }
 
+  if (state.activeTemplateName === template.name) {
+    state.activeTemplateName = "";
+    els.templateName.value = "";
+  }
   setMessage(els.questionStatus, `${template.name} deleted.`);
   await loadTemplates();
 }
@@ -447,8 +556,13 @@ async function loadTemplates() {
     return;
   }
 
-  const lockedNames = new Set(LOCKED_TEMPLATES.map((template) => template.name.toLowerCase()));
-  state.templates = (data || []).filter((template) => !lockedNames.has(String(template.name || "").toLowerCase()));
+  const allTemplates = data || [];
+  state.preset2026Override =
+    allTemplates.find((template) => String(template.name || "").toLowerCase() === PRESET_2026_NAME.toLowerCase()) || null;
+  state.templates = allTemplates.filter((template) => {
+    const normalized = String(template.name || "").toLowerCase();
+    return normalized !== BLANK_TEMPLATE.name.toLowerCase() && normalized !== PRESET_2026_NAME.toLowerCase();
+  });
   renderTemplates();
 }
 
