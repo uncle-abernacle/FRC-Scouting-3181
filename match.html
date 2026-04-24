@@ -108,7 +108,6 @@
             <p class="eyebrow">Driver control</p>
             <h3 id="teleop-title">Teleop</h3>
             <div class="question-stack" data-phase-stack="teleop"></div>
-            <div class="question-stack" data-phase-stack="overall"></div>
           </section>
 
           <section class="scout-step" data-step="endgame" aria-labelledby="endgame-title">
@@ -120,6 +119,7 @@
           <section class="scout-step" data-step="review" aria-labelledby="review-title">
             <p class="eyebrow">Submit</p>
             <h3 id="review-title">Review notes</h3>
+            <div class="question-stack" data-phase-stack="overall"></div>
             <label class="full-field">
               <span>Extra notes</span>
               <textarea id="notes" name="notes" rows="4" placeholder="Defense, driver skill, weird moments..."></textarea>
@@ -163,6 +163,6 @@
         submitButton?.addEventListener("click", warnIfNotReady);
       })();
     </script>
-    <script type="module" src="src/match-app.js?v=submit-validator-fix-20260423"></script>
+    <script type="module" src="src/match-app.js?v=overall-in-review-20260423"></script>
   </body>
 </html>
