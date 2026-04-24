@@ -33,8 +33,13 @@
             <p class="eyebrow">Recent submissions</p>
             <h2 id="data-title">Match data</h2>
           </div>
-          <button class="ghost-button" id="exportButton" type="button">Export CSV</button>
+          <div class="item-actions">
+            <button class="ghost-button" id="importButton" type="button">Import CSV</button>
+            <button class="ghost-button" id="exportButton" type="button">Export CSV</button>
+          </div>
         </div>
+        <input class="hidden" id="importFileInput" type="file" accept=".csv,text/csv" />
+        <p class="form-status" id="dataStatus" role="status"></p>
         <div class="data-layout">
           <div class="submission-list" id="submissionList"></div>
           <aside class="detail-panel" id="submissionDetail" aria-live="polite"></aside>
@@ -49,6 +54,6 @@
       </div>
     </template>
 
-    <script type="module" src="src/data.js?v=data-close-order-20260423"></script>
+    <script type="module" src="src/data.js?v=data-import-csv-20260424"></script>
   </body>
 </html>
